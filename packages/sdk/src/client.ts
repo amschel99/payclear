@@ -12,6 +12,14 @@ import {
 } from "@solana/spl-token";
 import * as pda from "./accounts/pda.js";
 import { generateNonce, hashKycData, hashTravelRuleData, toInstitutionId } from "./utils/hash.js";
+import {
+  buildKycMerkleTree,
+  getMerkleRoot,
+  generateProof,
+  verifyProof,
+  type KycFieldMap,
+  type MerkleProof,
+} from "./utils/merkle.js";
 import type {
   KycAttestation,
   CompliancePolicy,
@@ -497,6 +505,61 @@ export class PayClearClient {
     } catch {
       return null;
     }
+  }
+
+  // ─── Merkle Selective Disclosure ─────────────────────────
+
+  /**
+   * Build a Merkle root from KYC fields for on-chain attestation.
+   *
+   * The returned Buffer is a 32-byte SHA-256 root that can be stored as
+   * the `kycHash` in a KYC attestation account. Unlike a flat hash of all
+   * fields, this root enables selective disclosure of individual attributes
+   * via Merkle inclusion proofs.
+   *
+   * @param fields - A map of canonical KYC field names to their string values.
+   * @returns The 32-byte Merkle root.
+   */
+  buildKycMerkleRoot(fields: KycFieldMap): Buffer {
+    const tree = buildKycMerkleTree(fields);
+    return getMerkleRoot(tree);
+  }
+
+  /**
+   * Generate a selective disclosure proof for specific KYC fields.
+   *
+   * The caller provides all fields (to rebuild the tree) and specifies which
+   * subset to disclose. The returned proof contains only the disclosed field
+   * values plus the sibling hashes needed to verify inclusion against the
+   * Merkle root — undisclosed fields remain hidden.
+   *
+   * @param fields - The full KYC field map (all fields used to build the tree).
+   * @param disclosedFieldNames - The subset of field names to disclose.
+   * @returns A Merkle inclusion proof for the disclosed fields.
+   */
+  generateDisclosureProof(
+    fields: KycFieldMap,
+    disclosedFieldNames: string[]
+  ): MerkleProof {
+    const tree = buildKycMerkleTree(fields);
+    return generateProof(tree, disclosedFieldNames);
+  }
+
+  /**
+   * Verify a selective disclosure proof against an on-chain Merkle root.
+   *
+   * @param root - The 32-byte Merkle root from the on-chain attestation.
+   * @param proof - The Merkle proof to verify.
+   * @param disclosedFields - The disclosed field name-value pairs.
+   * @returns `true` if the proof is valid and all disclosed fields are
+   *          included in the tree represented by `root`.
+   */
+  verifyDisclosureProof(
+    root: Buffer,
+    proof: MerkleProof,
+    disclosedFields: KycFieldMap
+  ): boolean {
+    return verifyProof(root, proof, disclosedFields);
   }
 
   // ─── Static PDA Helpers ──────────────────────────────────

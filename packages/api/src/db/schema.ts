@@ -53,6 +53,11 @@ export const entities = pgTable(
     addressCountry: char("address_country", { length: 2 }),
     onchainPubkey: text("onchain_pubkey"),
     kycHash: text("kyc_hash"), // hex-encoded
+    sumsubApplicantId: text("sumsub_applicant_id"),
+    sumsubReviewStatus: text("sumsub_review_status"),
+    sumsubVerificationLevel: text("sumsub_verification_level"),
+    sasAttestationAddress: text("sas_attestation_address"),
+    kycProvider: text("kyc_provider").default("self"), // 'self' | 'sumsub'
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

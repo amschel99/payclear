@@ -1,0 +1,70 @@
+use anchor_lang::prelude::*;
+
+#[error_code]
+pub enum PayClearError {
+    #[msg("Registry is paused")]
+    RegistryPaused,
+
+    #[msg("Institution is not active")]
+    InstitutionInactive,
+
+    #[msg("Unauthorized: signer is not the institution authority")]
+    UnauthorizedInstitution,
+
+    #[msg("Unauthorized: signer is not the registry authority")]
+    UnauthorizedRegistry,
+
+    #[msg("KYC attestation is not active")]
+    AttestationNotActive,
+
+    #[msg("KYC attestation has expired")]
+    AttestationExpired,
+
+    #[msg("KYC level does not meet minimum requirement")]
+    InsufficientKycLevel,
+
+    #[msg("Risk score exceeds maximum allowed")]
+    RiskScoreTooHigh,
+
+    #[msg("Invalid risk score: must be 0-100")]
+    InvalidRiskScore,
+
+    #[msg("Travel Rule record is required for this transfer amount")]
+    TravelRuleRequired,
+
+    #[msg("Travel Rule record has not been approved")]
+    TravelRuleNotApproved,
+
+    #[msg("Transfer amount exceeds maximum allowed")]
+    TransferAmountExceeded,
+
+    #[msg("Daily transfer limit exceeded")]
+    DailyLimitExceeded,
+
+    #[msg("Sender jurisdiction is blocked")]
+    SenderJurisdictionBlocked,
+
+    #[msg("Receiver jurisdiction is blocked")]
+    ReceiverJurisdictionBlocked,
+
+    #[msg("Both sender and receiver must have KYC attestations")]
+    BothPartiesRequireAttestation,
+
+    #[msg("Invalid KYC status transition")]
+    InvalidStatusTransition,
+
+    #[msg("Travel Rule record does not match transfer parameters")]
+    TravelRuleMismatch,
+
+    #[msg("Invalid nonce: must be 32 bytes")]
+    InvalidNonce,
+
+    #[msg("Transfer nonce already used")]
+    NonceAlreadyUsed,
+
+    #[msg("Policy is not active")]
+    PolicyInactive,
+
+    #[msg("Arithmetic overflow")]
+    ArithmeticOverflow,
+}

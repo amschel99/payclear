@@ -1,0 +1,36 @@
+name: SDK CI
+
+on:
+  push:
+    paths:
+      - "packages/sdk/**"
+  pull_request:
+    paths:
+      - "packages/sdk/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: packages/sdk
+        run: pnpm install
+
+      - name: Build
+        working-directory: packages/sdk
+        run: pnpm build
+
+      - name: Test
+        working-directory: packages/sdk
+        run: pnpm test

@@ -1,0 +1,66 @@
+name: Program CI
+
+on:
+  push:
+    paths:
+      - "packages/program/**"
+  pull_request:
+    paths:
+      - "packages/program/**"
+
+env:
+  SOLANA_VERSION: "1.18.17"
+  ANCHOR_VERSION: "0.30.1"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            packages/program/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/program/Cargo.lock') }}
+
+      - name: Install Solana
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Anchor
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --force
+          avm install ${{ env.ANCHOR_VERSION }}
+          avm use ${{ env.ANCHOR_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: packages/program
+        run: pnpm install
+
+      - name: Generate keypair
+        run: solana-keygen new --no-bip39-passphrase
+
+      - name: Build
+        working-directory: packages/program
+        run: anchor build
+
+      - name: Test
+        working-directory: packages/program
+        run: anchor test --skip-local-validator

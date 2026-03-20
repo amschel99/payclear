@@ -11,8 +11,12 @@ export type AuditEventType =
   | "transfer.submitted"
   | "transfer.completed"
   | "transfer.failed"
+  | "transfer.blocked"
   | "travel_rule.created"
   | "travel_rule.approved"
+  | "screening.cleared"
+  | "screening.flagged"
+  | "screening.blocked"
   | "webhook.created"
   | "webhook.deleted";
 

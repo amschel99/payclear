@@ -53,6 +53,8 @@ export const entities = pgTable(
     addressCountry: char("address_country", { length: 2 }),
     onchainPubkey: text("onchain_pubkey"),
     kycHash: text("kyc_hash"), // hex-encoded
+    chainalysisUserId: text("chainalysis_user_id"),
+    lastScreenedAt: timestamp("last_screened_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -129,6 +131,30 @@ export const travelRuleData = pgTable("travel_rule_data", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ─── Screening Results (Chainalysis KYT) ────────────────────
+
+export const screeningResults = pgTable(
+  "screening_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    transferId: uuid("transfer_id"),
+    entityId: uuid("entity_id"),
+    provider: text("provider").notNull(), // "chainalysis"
+    externalId: text("external_id").notNull(), // Chainalysis transfer/entity ID
+    rating: text("rating").notNull(), // lowRisk/mediumRisk/highRisk/severe
+    riskScore: smallint("risk_score").notNull(), // 0-100 PayClear scale
+    rawScore: text("raw_score"), // original Chainalysis score
+    exposures: jsonb("exposures"), // array of exposure objects
+    screenedAt: timestamp("screened_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_screening_transfer").on(table.transferId),
+    index("idx_screening_entity").on(table.entityId),
+    index("idx_screening_external").on(table.externalId),
+  ]
+);
+
 // ─── Transfers ───────────────────────────────────────────────
 
 export const transfers = pgTable(
@@ -151,6 +177,8 @@ export const transfers = pgTable(
     senderRiskScore: smallint("sender_risk_score"),
     receiverRiskScore: smallint("receiver_risk_score"),
     travelRuleId: uuid("travel_rule_id").references(() => travelRuleData.id),
+    screeningStatus: text("screening_status"), // 'pending' | 'cleared' | 'flagged' | 'blocked'
+    screeningId: uuid("screening_id"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
@@ -160,6 +188,7 @@ export const transfers = pgTable(
     index("idx_transfers_sender").on(table.senderWallet),
     index("idx_transfers_receiver").on(table.receiverWallet),
     index("idx_transfers_created").on(table.createdAt),
+    index("idx_transfers_screening").on(table.screeningStatus),
   ]
 );
 

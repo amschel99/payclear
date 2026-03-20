@@ -10,6 +10,7 @@ import { policyRoutes } from "./routes/policies.js";
 import { transferRoutes } from "./routes/transfers.js";
 import { auditRoutes } from "./routes/audit.js";
 import { webhookRoutes } from "./routes/webhooks.js";
+import { trustRoutes } from "./routes/trust.js";
 
 const app = Fastify({ logger: true });
 
@@ -53,6 +54,7 @@ async function start() {
   await app.register(transferRoutes);
   await app.register(auditRoutes);
   await app.register(webhookRoutes);
+  await app.register(trustRoutes);
 
   // Health check
   app.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

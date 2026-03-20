@@ -67,4 +67,30 @@ pub enum PayClearError {
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+
+    // ─── Trust Network Errors ────────────────────────────────
+
+    #[msg("Institution is not in the trust network")]
+    InstitutionNotTrusted,
+
+    #[msg("External attestation KYC level does not meet minimum requirement")]
+    KycLevelInsufficient,
+
+    #[msg("Trust network is full (maximum 32 trusted institutions)")]
+    TrustNetworkFull,
+
+    #[msg("Institution is already in the trust network")]
+    InstitutionAlreadyTrusted,
+
+    #[msg("Institution not found in the trust network")]
+    InstitutionNotInTrustNetwork,
+
+    #[msg("External attestation is not active or has expired")]
+    ExternalAttestationInvalid,
+
+    #[msg("Jurisdiction mismatch: trust network requires same jurisdiction")]
+    JurisdictionMismatch,
+
+    #[msg("Cannot add own institution to trust network")]
+    CannotTrustSelf,
 }

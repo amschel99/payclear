@@ -6,6 +6,7 @@ export type AuditEventType =
   | "entity.created"
   | "entity.updated"
   | "entity.revoked"
+  | "entity.accepted_external"
   | "policy.created"
   | "policy.updated"
   | "transfer.submitted"
@@ -13,6 +14,8 @@ export type AuditEventType =
   | "transfer.failed"
   | "travel_rule.created"
   | "travel_rule.approved"
+  | "trust_network.added"
+  | "trust_network.removed"
   | "webhook.created"
   | "webhook.deleted";
 

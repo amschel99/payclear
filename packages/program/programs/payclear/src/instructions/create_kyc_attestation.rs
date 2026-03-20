@@ -63,6 +63,8 @@ pub fn handler(
     attestation.expires_at = expires_at;
     attestation.created_at = now;
     attestation.updated_at = now;
+    // First-party attestation — no original institution
+    attestation.original_institution = Pubkey::default();
     attestation.bump = ctx.bumps.attestation;
 
     let institution = &mut ctx.accounts.institution;

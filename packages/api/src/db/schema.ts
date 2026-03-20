@@ -54,10 +54,48 @@ export const entities = pgTable(
     onchainPubkey: text("onchain_pubkey"),
     kycHash: text("kyc_hash"), // hex-encoded
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+    /// If this entity was created by accepting an external attestation, this
+    /// references the institution that originally performed the KYC.
+    /// NULL means this is a first-party KYC verification.
+    originalInstitutionId: uuid("original_institution_id").references(
+      () => institutions.id
+    ),
+    /// If this entity was accepted from an external attestation, this
+    /// references the original entity record for provenance tracking.
+    /// NULL means this is a first-party KYC verification.
+    originalEntityId: uuid("original_entity_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique().on(table.institutionId, table.walletAddress)]
+);
+
+// ─── Trust Network ───────────────────────────────────────────
+// Tracks which institutions trust each other's KYC attestations.
+// This is the off-chain mirror of the on-chain TrustNetwork PDA.
+
+export const trustNetwork = pgTable(
+  "trust_network",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id),
+    trustedInstitutionId: uuid("trusted_institution_id")
+      .notNull()
+      .references(() => institutions.id),
+    minKycLevel: smallint("min_kyc_level").notNull().default(1),
+    requireSameJurisdiction: boolean("require_same_jurisdiction")
+      .notNull()
+      .default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique().on(table.institutionId, table.trustedInstitutionId),
+    index("idx_trust_network_institution").on(table.institutionId),
+  ]
 );
 
 // ─── Compliance Policies ─────────────────────────────────────

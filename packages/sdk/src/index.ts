@@ -45,3 +45,14 @@ export {
   toInstitutionId,
   generateNonce,
 } from "./utils/hash.js";
+
+// Canonical serialization (RFC 8785)
+export {
+  canonicalize,
+  canonicalHash,
+  hashKycCanonical,
+  hashKycCanonicalHex,
+  serializeCanonical,
+  HASH_VERSION,
+  KYC_HASH_FIELDS_V1,
+} from "./utils/canonical.js";

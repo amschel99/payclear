@@ -53,6 +53,7 @@ export const entities = pgTable(
     addressCountry: char("address_country", { length: 2 }),
     onchainPubkey: text("onchain_pubkey"),
     kycHash: text("kyc_hash"), // hex-encoded
+    civicPassAddress: text("civic_pass_address"),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -84,6 +85,8 @@ export const compliancePolicies = pgTable(
     allowedJurisdictions: text("allowed_jurisdictions").array(),
     blockedJurisdictions: text("blocked_jurisdictions").array(),
     active: boolean("active").notNull().default(true),
+    requireCivicPass: boolean("require_civic_pass").notNull().default(false),
+    gatekeeperNetwork: text("gatekeeper_network"),
     onchainPubkey: text("onchain_pubkey"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

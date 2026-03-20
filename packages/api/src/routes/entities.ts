@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { authMiddleware } from "../middleware/auth.js";
 import { createEntitySchema, updateEntitySchema } from "../schemas/entity.schema.js";
 import * as entityService from "../services/entity.service.js";
+import * as civicService from "../services/civic.service.js";
 
 export async function entityRoutes(app: FastifyInstance) {
   // All entity routes require institution auth
@@ -64,6 +65,28 @@ export async function entityRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: "Entity not found" });
     }
     return updated;
+  });
+
+  // Check Civic Pass status for a wallet
+  app.get<{
+    Params: { wallet: string };
+    Querystring: { gatekeeperNetwork?: string };
+  }>("/v1/entities/:wallet/civic-pass", async (request, reply) => {
+    const { wallet } = request.params;
+    const { gatekeeperNetwork } = request.query;
+
+    try {
+      const status = await civicService.getCivicPassStatus(
+        wallet,
+        gatekeeperNetwork
+      );
+      return status;
+    } catch (err: any) {
+      return reply.status(400).send({
+        error: "Failed to check Civic Pass",
+        message: err.message,
+      });
+    }
   });
 
   // Revoke entity attestation

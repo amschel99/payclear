@@ -22,4 +22,15 @@ export const config = {
     signingSecret: process.env.WEBHOOK_SIGNING_SECRET || "dev-secret",
     maxRetries: 5,
   },
+
+  civic: {
+    /** Default Civic Gatekeeper Network public key (Civic Pass Uniqueness / KYC network) */
+    defaultGatekeeperNetwork:
+      process.env.CIVIC_DEFAULT_GATEKEEPER_NETWORK ||
+      "ignREusXmGrscGNUesoU9mxfds9AiYqSGGY9CPQZ1Fo",
+    /** Civic Gateway program ID */
+    gatewayProgramId:
+      process.env.CIVIC_GATEWAY_PROGRAM_ID ||
+      "gatem74V238djXdzWnJf94Wo1DcnuGkfijbf3AuBhfs",
+  },
 } as const;

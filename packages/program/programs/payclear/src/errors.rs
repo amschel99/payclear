@@ -67,4 +67,16 @@ pub enum PayClearError {
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+
+    #[msg("Civic Pass is not active")]
+    CivicPassNotActive,
+
+    #[msg("Civic Pass not found for wallet")]
+    CivicPassNotFound,
+
+    #[msg("Civic Pass has expired")]
+    CivicPassExpired,
+
+    #[msg("Invalid gatekeeper network")]
+    InvalidGatekeeperNetwork,
 }

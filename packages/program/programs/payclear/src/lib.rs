@@ -7,7 +7,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("PCLRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+declare_id!("FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6");
 
 #[program]
 pub mod payclear {

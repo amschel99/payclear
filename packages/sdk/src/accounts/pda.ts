@@ -7,6 +7,7 @@ const POLICY_SEED = Buffer.from("policy");
 const TRAVEL_RULE_SEED = Buffer.from("travel_rule");
 const TRANSFER_SEED = Buffer.from("transfer");
 const EXTRA_ACCOUNT_META_LIST_SEED = Buffer.from("extra-account-metas");
+const ZK_PROOF_SEED = Buffer.from("zk_proof");
 
 export function deriveRegistryPDA(
   programId: PublicKey
@@ -72,6 +73,18 @@ export function deriveExtraAccountMetaListPDA(
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [EXTRA_ACCOUNT_META_LIST_SEED, mint.toBuffer()],
+    programId
+  );
+}
+
+export function deriveZkProofPDA(
+  institution: PublicKey,
+  wallet: PublicKey,
+  proofIdentifier: Buffer,
+  programId: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [ZK_PROOF_SEED, institution.toBuffer(), wallet.toBuffer(), proofIdentifier],
     programId
   );
 }

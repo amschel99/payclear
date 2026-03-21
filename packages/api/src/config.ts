@@ -1,5 +1,26 @@
 import "dotenv/config";
 
+/**
+ * Validate that the master encryption key is present and correctly formatted.
+ * This runs at import time to fail fast if misconfigured.
+ */
+function validateMasterKey(): string {
+  const key = process.env.PAYCLEAR_MASTER_KEY;
+  if (!key) {
+    // Allow startup without key for migrations and non-encryption operations,
+    // but KeyManager.initialize() will enforce this at runtime.
+    return "";
+  }
+  const cleaned = key.trim();
+  if (!/^[0-9a-fA-F]{64}$/.test(cleaned)) {
+    throw new Error(
+      "PAYCLEAR_MASTER_KEY must be exactly 64 hex characters (32 bytes). " +
+      "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+    );
+  }
+  return cleaned;
+}
+
 export const config = {
   port: parseInt(process.env.API_PORT || "3000", 10),
   host: process.env.API_HOST || "0.0.0.0",
@@ -32,5 +53,36 @@ export const config = {
     gatewayProgramId:
       process.env.CIVIC_GATEWAY_PROGRAM_ID ||
       "gatem74V238djXdzWnJf94Wo1DcnuGkfijbf3AuBhfs",
+  },
+
+  sumsub: {
+    appToken: process.env.SUMSUB_APP_TOKEN || "",
+    secretKey: process.env.SUMSUB_SECRET_KEY || "",
+    webhookSecret: process.env.SUMSUB_WEBHOOK_SECRET || "",
+    baseUrl: process.env.SUMSUB_BASE_URL || "https://api.sumsub.com",
+    defaultLevel: process.env.SUMSUB_DEFAULT_LEVEL || "basic-kyc-level",
+  },
+
+  sas: {
+    programId: process.env.SAS_PROGRAM_ID || "",
+  },
+
+  encryption: {
+    /** Hex-encoded 32-byte AES-256 master key for PII field encryption */
+    masterKey: validateMasterKey(),
+  },
+
+  chainalysis: {
+    apiKey: process.env.CHAINALYSIS_API_KEY || "",
+    baseUrl:
+      process.env.CHAINALYSIS_BASE_URL ||
+      "https://api.chainalysis.com/api/kyt/v2",
+    webhookSecret: process.env.CHAINALYSIS_WEBHOOK_SECRET || "",
+    autoRejectThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REJECT_THRESHOLD || "70"
+    ),
+    autoRevokeThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REVOKE_THRESHOLD || "85"
+    ),
   },
 } as const;

@@ -94,6 +94,46 @@ export interface CivicGatewayToken {
   expireTime: bigint;
 }
 
+// ─── Selective Disclosure Types ──────────────────────────────────
+
+/**
+ * Serializable representation of a Merkle proof for transport over the wire.
+ * Buffer values are hex-encoded strings for JSON compatibility.
+ */
+export interface SerializedMerkleProof {
+  /** Hex-encoded Merkle root. */
+  root: string;
+  /** Individual field proofs. */
+  items: SerializedMerkleProofItem[];
+}
+
+export interface SerializedMerkleProofItem {
+  fieldName: string;
+  fieldValue: string;
+  /** Hex-encoded leaf hash. */
+  leafHash: string;
+  siblings: SerializedProofSibling[];
+}
+
+export interface SerializedProofSibling {
+  /** Hex-encoded sibling hash. */
+  hash: string;
+  position: "left" | "right";
+}
+
+/**
+ * Response returned by the disclosure proof API endpoint.
+ */
+export interface DisclosureProofResponse {
+  walletAddress: string;
+  /** Hex-encoded Merkle root matching on-chain kycHash. */
+  merkleRoot: string;
+  /** The disclosed field values. */
+  disclosedFields: Record<string, string>;
+  /** The serialized Merkle proof. */
+  proof: SerializedMerkleProof;
+}
+
 // Status enums
 export const KycStatus = {
   Pending: 0,

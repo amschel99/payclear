@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { db } from "../db/client.js";
 import { institutions } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
+import { keyManager } from "../utils/key-manager.js";
 import type { CreateInstitutionInput } from "../schemas/institution.schema.js";
 
 export async function createInstitution(
@@ -34,6 +35,9 @@ export async function createInstitution(
       apiKeyHash,
     })
     .returning();
+
+  // Generate and store a wrapped Data Encryption Key for this institution
+  await keyManager.createInstitutionKey(institution.id);
 
   await logAuditEvent({
     institutionId: institution.id,

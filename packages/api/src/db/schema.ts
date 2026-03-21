@@ -53,42 +53,11 @@ export const entities = pgTable(
     addressCountry: char("address_country", { length: 2 }),
     onchainPubkey: text("onchain_pubkey"),
     kycHash: text("kyc_hash"), // hex-encoded
-    zkProofId: uuid("zk_proof_id"),
-    kycProofSource: text("kyc_proof_source"), // 'direct', 'sumsub', 'reclaim'
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique().on(table.institutionId, table.walletAddress)]
-);
-
-// ─── ZK Proofs (Reclaim Protocol) ─────────────────────────────
-
-export const zkProofs = pgTable(
-  "zk_proofs",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    institutionId: uuid("institution_id")
-      .notNull()
-      .references(() => institutions.id),
-    entityId: uuid("entity_id"),
-    walletAddress: text("wallet_address").notNull(),
-    proofIdentifier: text("proof_identifier").notNull().unique(),
-    provider: text("provider").notNull(),
-    kycLevel: smallint("kyc_level").notNull(),
-    reclaimProofData: jsonb("reclaim_proof_data").notNull(),
-    attestorId: text("attestor_id").notNull(),
-    status: text("status").notNull().default("verified"),
-    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    onchainAddress: text("onchain_address"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index("idx_zk_proofs_wallet").on(table.walletAddress),
-    index("idx_zk_proofs_institution").on(table.institutionId),
-    index("idx_zk_proofs_identifier").on(table.proofIdentifier),
-  ]
 );
 
 // ─── Compliance Policies ─────────────────────────────────────

@@ -67,16 +67,4 @@ pub enum PayClearError {
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
-
-    #[msg("ZK proof has expired")]
-    ZkProofExpired,
-
-    #[msg("ZK proof is invalid")]
-    ZkProofInvalid,
-
-    #[msg("Attestor is not trusted")]
-    UntrustedAttestor,
-
-    #[msg("This proof has already been recorded")]
-    ProofAlreadyRecorded,
 }

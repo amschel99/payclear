@@ -14,10 +14,7 @@ export type AuditEventType =
   | "travel_rule.created"
   | "travel_rule.approved"
   | "webhook.created"
-  | "webhook.deleted"
-  | "zk_proof.verified"
-  | "zk_proof.expired"
-  | "zk_proof.revoked";
+  | "webhook.deleted";
 
 export async function logAuditEvent(params: {
   institutionId: string;

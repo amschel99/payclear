@@ -33,12 +33,3 @@ pub const TRANSFER_STATUS_FLAGGED: u8 = 3;
 
 /// Max risk score
 pub const MAX_RISK_SCORE: u8 = 100;
-
-/// ZK proof PDA seed
-pub const ZK_PROOF_SEED: &[u8] = b"zk_proof";
-
-/// ZK proof status values
-pub const ZK_PROOF_STATUS_PENDING: u8 = 0;
-pub const ZK_PROOF_STATUS_VERIFIED: u8 = 1;
-pub const ZK_PROOF_STATUS_EXPIRED: u8 = 2;
-pub const ZK_PROOF_STATUS_REVOKED: u8 = 3;

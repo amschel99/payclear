@@ -79,20 +79,6 @@ export interface TransferRecord {
   bump: number;
 }
 
-export interface ZkProofRecord {
-  institution: PublicKey;
-  wallet: PublicKey;
-  proofIdentifier: Uint8Array; // 32 bytes (SHA-256 of Reclaim proof identifier)
-  provider: Uint8Array; // 32 bytes (padded provider name)
-  kycLevel: number;
-  verifiedAt: bigint;
-  expiresAt: bigint;
-  attestor: PublicKey;
-  status: number;
-  createdAt: bigint;
-  bump: number;
-}
-
 // Status enums
 export const KycStatus = {
   Pending: 0,
@@ -120,11 +106,4 @@ export const TransferStatus = {
   Completed: 1,
   Failed: 2,
   Flagged: 3,
-} as const;
-
-export const ZkProofStatus = {
-  Pending: 0,
-  Verified: 1,
-  Expired: 2,
-  Revoked: 3,
 } as const;

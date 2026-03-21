@@ -2,6 +2,9 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { entities } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
+import { keyManager } from "../utils/key-manager.js";
+import { encryptEntityPii, decryptEntityPii } from "../utils/encryption.js";
+import type { PiiFields } from "../utils/encryption.js";
 import {
   hashKycCanonicalHex,
   HASH_VERSION,
@@ -62,16 +65,39 @@ function buildMerkleLeafMap(fields: KycFieldMap): Record<string, string> {
   return leafMap;
 }
 
+/**
+ * Extract PII fields from entity input for encryption.
+ */
+function extractPiiFields(input: CreateEntityInput): PiiFields {
+  return {
+    fullName: input.fullName,
+    dateOfBirth: input.dateOfBirth,
+    nationality: input.nationality,
+    governmentIdType: input.governmentIdType,
+    governmentIdHash: input.governmentIdHash,
+    addressLine1: input.addressLine1,
+    addressCity: input.addressCity,
+    addressCountry: input.addressCountry,
+  };
+}
+
 export async function createEntity(
   institutionId: string,
   input: CreateEntityInput,
   actor: string
 ) {
-  // Build the Merkle tree from canonical KYC fields
+  // Extract PII for encryption
+  const piiFields = extractPiiFields(input);
+
+  // Build the Merkle tree from PLAINTEXT canonical KYC fields (before encryption)
   const kycFields = buildKycFieldMap(input, institutionId);
   const tree = buildKycMerkleTree(kycFields);
   const kycHash = getMerkleRoot(tree).toString("hex");
   const merkleLeaves = buildMerkleLeafMap(kycFields);
+
+  // Encrypt PII fields using the institution's DEK
+  const dek = await keyManager.getDek(institutionId);
+  const encryptedPii = encryptEntityPii(piiFields, dek);
 
   const [entity] = await db
     .insert(entities)
@@ -81,14 +107,14 @@ export async function createEntity(
       kycLevel: input.kycLevel,
       riskScore: input.riskScore,
       status: 1, // active
-      fullName: input.fullName,
-      dateOfBirth: input.dateOfBirth,
-      nationality: input.nationality,
-      governmentIdType: input.governmentIdType,
-      governmentIdHash: input.governmentIdHash,
-      addressLine1: input.addressLine1,
-      addressCity: input.addressCity,
-      addressCountry: input.addressCountry,
+      fullName: encryptedPii.fullName,
+      dateOfBirth: encryptedPii.dateOfBirth,
+      nationality: encryptedPii.nationality,
+      governmentIdType: encryptedPii.governmentIdType,
+      governmentIdHash: encryptedPii.governmentIdHash,
+      addressLine1: encryptedPii.addressLine1,
+      addressCity: encryptedPii.addressCity,
+      addressCountry: encryptedPii.addressCountry,
       kycHash,
       merkleLeaves,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
@@ -101,6 +127,7 @@ export async function createEntity(
     entityType: "entity",
     entityId: entity.id,
     actor,
+    // Only log non-PII metadata in audit trail
     details: { walletAddress: input.walletAddress, kycLevel: input.kycLevel },
   });
 
@@ -117,7 +144,28 @@ export async function getEntity(institutionId: string, walletAddress: string) {
         eq(entities.walletAddress, walletAddress)
       )
     );
-  return entity ?? null;
+
+  if (!entity) return null;
+
+  // Decrypt PII fields before returning
+  const dek = await keyManager.getDek(institutionId);
+  const encryptedPii: PiiFields = {
+    fullName: entity.fullName,
+    dateOfBirth: entity.dateOfBirth,
+    nationality: entity.nationality,
+    governmentIdType: entity.governmentIdType,
+    governmentIdHash: entity.governmentIdHash,
+    addressLine1: entity.addressLine1,
+    addressCity: entity.addressCity,
+    addressCountry: entity.addressCountry,
+  };
+
+  const decryptedPii = decryptEntityPii(encryptedPii, dek);
+
+  return {
+    ...entity,
+    ...decryptedPii,
+  };
 }
 
 export async function updateEntity(

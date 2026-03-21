@@ -5,6 +5,7 @@ import {
   boolean,
   timestamp,
   smallint,
+  integer,
   bigint,
   jsonb,
   bigserial,
@@ -25,6 +26,7 @@ export const institutions = pgTable("institutions", {
   onchainPubkey: text("onchain_pubkey").notNull().unique(),
   authorityPubkey: text("authority_pubkey").notNull(),
   apiKeyHash: text("api_key_hash").notNull(),
+  encryptedDek: text("encrypted_dek"), // AES-256-GCM wrapped DEK (base64), encrypted by master key
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -43,17 +45,18 @@ export const entities = pgTable(
     kycLevel: smallint("kyc_level").notNull().default(0),
     riskScore: smallint("risk_score").notNull().default(0),
     status: smallint("status").notNull().default(0),
-    fullName: text("full_name"),
-    dateOfBirth: date("date_of_birth"),
-    nationality: char("nationality", { length: 2 }),
-    governmentIdType: text("government_id_type"),
-    governmentIdHash: text("government_id_hash"),
-    addressLine1: text("address_line1"),
-    addressCity: text("address_city"),
-    addressCountry: char("address_country", { length: 2 }),
+    fullName: text("full_name"), // AES-256-GCM encrypted PII
+    dateOfBirth: text("date_of_birth"), // AES-256-GCM encrypted PII (stored as encrypted text, not date)
+    nationality: text("nationality"), // AES-256-GCM encrypted PII (stored as encrypted text, not char(2))
+    governmentIdType: text("government_id_type"), // AES-256-GCM encrypted PII
+    governmentIdHash: text("government_id_hash"), // AES-256-GCM encrypted PII
+    addressLine1: text("address_line1"), // AES-256-GCM encrypted PII
+    addressCity: text("address_city"), // AES-256-GCM encrypted PII
+    addressCountry: text("address_country"), // AES-256-GCM encrypted PII (stored as encrypted text, not char(2))
     onchainPubkey: text("onchain_pubkey"),
-    kycHash: text("kyc_hash"), // hex-encoded Merkle root
+    kycHash: text("kyc_hash"), // hex-encoded Merkle root (computed from plaintext PII before encryption)
     merkleLeaves: jsonb("merkle_leaves"), // { fieldName: hexLeafHash } for proof generation
+    encryptionVersion: integer("encryption_version").notNull().default(1), // for future algorithm rotation
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

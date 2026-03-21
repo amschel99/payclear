@@ -22,4 +22,18 @@ export const config = {
     signingSecret: process.env.WEBHOOK_SIGNING_SECRET || "dev-secret",
     maxRetries: 5,
   },
+
+  chainalysis: {
+    apiKey: process.env.CHAINALYSIS_API_KEY || "",
+    baseUrl:
+      process.env.CHAINALYSIS_BASE_URL ||
+      "https://api.chainalysis.com/api/kyt/v2",
+    webhookSecret: process.env.CHAINALYSIS_WEBHOOK_SECRET || "",
+    autoRejectThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REJECT_THRESHOLD || "70"
+    ),
+    autoRevokeThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REVOKE_THRESHOLD || "85"
+    ),
+  },
 } as const;

@@ -86,8 +86,8 @@ redis-cli ping  # should return PONG
 ## 2. Clone & Install
 
 ```bash
-git clone <repo-url> paystable
-cd paystable
+git clone <repo-url> payclear
+cd payclear
 pnpm install
 ```
 
@@ -178,7 +178,47 @@ curl http://localhost:3000/health
 
 ---
 
-## 6. Build the SDK
+## 6. Run the Frontend
+
+```bash
+cd packages/web
+
+# Set up environment (first time only)
+cp .env.local.example .env.local
+
+# Start the dev server
+pnpm dev
+```
+
+The frontend will be running at:
+- **Send Payment**: http://localhost:3001
+- **Dashboard**: http://localhost:3001/dashboard
+- **Admin Panel**: http://localhost:3001/admin
+
+### Configure Phantom Wallet for Devnet
+
+1. Open Phantom browser extension
+2. Go to **Settings** → **Developer Settings**
+3. **Change Network** → select **Devnet**
+4. You can airdrop devnet SOL from https://faucet.solana.com
+
+### Test the Send Payment Flow
+
+1. Open http://localhost:3001
+2. Connect your Phantom wallet (Devnet)
+3. Enter a recipient name, wallet address, and amount
+4. Complete KYC verification (name, DOB, nationality)
+5. Watch the compliance pipeline run:
+   - KYT scoring (risk analysis)
+   - Travel Rule packaging (IVMS101 hash)
+   - Oracle attestation (Solana Memo transaction)
+6. Click the Explorer link to verify the on-chain attestation
+
+> **Tip:** The Dashboard and Admin pages work with mock data even without the API. The Send flow needs the API running on port 3000.
+
+---
+
+## 7. Build the SDK
 
 ```bash
 cd packages/sdk
@@ -189,7 +229,7 @@ This outputs to `packages/sdk/dist/` and can be imported by other packages.
 
 ---
 
-## 7. Deploy to Devnet (optional)
+## 8. Deploy to Devnet (optional)
 
 ```bash
 # Switch to devnet
@@ -208,86 +248,91 @@ anchor deploy --provider.cluster devnet
 
 ---
 
-## 8. Project Structure Reference
+## 9. Project Structure Reference
 
 ```
-paystable/
+payclear/
 ├── .env.example              # Environment template
-├── .github/workflows/        # CI pipelines
+├── .github/workflows/        # CI pipelines (4 workflows)
 ├── package.json              # Root workspace config
 ├── pnpm-workspace.yaml       # Workspace packages
 ├── turbo.json                # Build orchestration
 │
-├── packages/program/         # Solana program (Rust/Anchor)
-│   ├── Anchor.toml           # Anchor config
-│   ├── Cargo.toml            # Rust workspace
-│   ├── programs/payclear/
-│   │   └── src/
-│   │       ├── lib.rs                # Program entrypoint + all instructions
-│   │       ├── instructions/         # One file per instruction handler
-│   │       │   ├── initialize_registry.rs
-│   │       │   ├── register_institution.rs
-│   │       │   ├── create_kyc_attestation.rs
-│   │       │   ├── revoke_kyc_attestation.rs
-│   │       │   ├── update_risk_score.rs
-│   │       │   ├── set_compliance_policy.rs
-│   │       │   ├── record_travel_rule.rs
-│   │       │   ├── approve_travel_rule.rs
-│   │       │   ├── execute_compliant_transfer.rs
-│   │       │   └── transfer_hook.rs
-│   │       ├── state/                # Account structs (PDAs)
-│   │       │   ├── registry.rs
-│   │       │   ├── institution.rs
-│   │       │   ├── kyc_attestation.rs
-│   │       │   ├── compliance_policy.rs
-│   │       │   ├── travel_rule_record.rs
-│   │       │   └── transfer_record.rs
-│   │       ├── errors.rs            # Custom error codes
-│   │       └── constants.rs         # Seeds, status values
-│   └── tests/                       # Integration tests (TypeScript)
+├── packages/web/             # Frontend (Next.js 14)
+│   ├── src/app/
+│   │   ├── page.tsx                 # Send Payment (4-step flow)
+│   │   ├── dashboard/page.tsx       # Transaction history
+│   │   └── admin/page.tsx           # Oracle attestation panel
+│   ├── src/components/
+│   │   ├── providers.tsx            # Solana wallet provider
+│   │   └── header.tsx               # Navigation header
+│   └── src/lib/
+│       ├── api.ts                   # Typed API client
+│       ├── constants.ts             # Solana config
+│       └── types.ts                 # Shared types
 │
 ├── packages/api/             # REST API (Fastify/TypeScript)
 │   ├── src/
 │   │   ├── index.ts                 # Server entrypoint
 │   │   ├── config.ts                # Environment config
-│   │   ├── routes/                  # HTTP handlers
-│   │   ├── services/                # Business logic
+│   │   ├── routes/
+│   │   │   ├── compliance.ts        # Public /api/* endpoints
+│   │   │   ├── institutions.ts      # Institutional /v1/* endpoints
+│   │   │   ├── entities.ts
+│   │   │   ├── transfers.ts
+│   │   │   ├── policies.ts
+│   │   │   ├── audit.ts
+│   │   │   └── webhooks.ts
+│   │   ├── services/
+│   │   │   ├── kyc.service.ts       # KYC verification (Sumsub mock)
+│   │   │   ├── kyt.service.ts       # KYT risk scoring engine
+│   │   │   ├── solana.service.ts    # Oracle keypair + Memo signing
+│   │   │   ├── entity.service.ts
+│   │   │   ├── transfer.service.ts
+│   │   │   └── audit.service.ts
 │   │   ├── middleware/              # Auth, validation
 │   │   ├── db/                      # Drizzle schema + client
 │   │   └── schemas/                 # Zod request validation
 │   └── drizzle.config.ts
 │
+├── packages/program/         # Solana program (Rust/Anchor)
+│   ├── programs/payclear/src/
+│   │   ├── lib.rs                   # Program entrypoint
+│   │   ├── instructions/            # 10 instruction handlers
+│   │   ├── state/                   # 6 PDA account types
+│   │   ├── errors.rs                # Custom error codes
+│   │   └── constants.rs             # Seeds, status values
+│   └── tests/                       # Integration tests
+│
 ├── packages/sdk/             # TypeScript SDK (@payclear/sdk)
 │   └── src/
-│       ├── index.ts                 # Public exports
 │       ├── client.ts                # PayClearClient class
 │       ├── accounts/                # PDA helpers + types
 │       └── utils/                   # Hash functions
 │
 └── packages/docs/            # Documentation
-    ├── architecture.md
-    ├── getting-started.md
-    └── travel-rule-compliance.md
 ```
 
 ---
 
-## 9. Common Commands
+## 10. Common Commands
 
 | Task | Command |
 |------|---------|
 | Install all deps | `pnpm install` (from root) |
 | Build everything | `pnpm build` (from root, uses Turborepo) |
+| Run frontend | `cd packages/web && pnpm dev` (port 3001) |
+| Run API | `cd packages/api && pnpm dev` (port 3000) |
+| Run DB migrations | `cd packages/api && pnpm db:migrate` |
 | Build program | `cd packages/program && anchor build` |
 | Test program | `cd packages/program && anchor test` |
-| Run API (dev) | `cd packages/api && pnpm dev` |
-| Run DB migrations | `cd packages/api && pnpm db:migrate` |
 | Build SDK | `cd packages/sdk && pnpm build` |
 | Test SDK | `cd packages/sdk && pnpm test` |
+| Lint everything | `pnpm lint` (from root) |
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 ### `anchor build` fails with "solana not found"
 Make sure Solana CLI is in your PATH:
@@ -313,6 +358,22 @@ redis-cli ping  # should return PONG
 
 ### Program ID mismatch
 After first `anchor build`, update the program ID in all three places (see Step 4 above) and rebuild.
+
+### Frontend can't connect to API
+Make sure the API is running on port 3000 first. Check that `packages/web/.env.local` has:
+```
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### Phantom wallet not showing Devnet
+Go to Phantom → Settings → Developer Settings → Change Network → select **Devnet**.
+
+### Oracle attestation fails with "Failed to load oracle keypair"
+You need a funded Solana keypair. Either:
+- Set `ORACLE_PRIVATE_KEY` in `.env` to a JSON array (e.g., `[1,2,3,...]`)
+- Or set `ANCHOR_WALLET` to point to a keypair JSON file
+
+Then airdrop SOL: `solana airdrop 2 <address> --url devnet`
 
 ---
 

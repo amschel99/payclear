@@ -3,9 +3,11 @@ dist/
 target/
 .anchor/
 .turbo/
+.next/
 *.so
 *.log
 .env
 .env.local
+.env.local.!example
 .DS_Store
 test-ledger/

@@ -86,6 +86,10 @@ export const config = {
     ),
   },
 
+  oracle: {
+    privateKey: process.env.ORACLE_PRIVATE_KEY || "",
+  },
+
   reclaim: {
     appId: process.env.RECLAIM_APP_ID || "",
     appSecret: process.env.RECLAIM_APP_SECRET || "",

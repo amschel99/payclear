@@ -25,6 +25,10 @@ pub struct CompliancePolicy {
     pub daily_limit: u64,
     /// Whether this policy is active
     pub active: bool,
+    /// Whether Civic Pass verification is required for transfers
+    pub require_civic_pass: bool,
+    /// The Civic Gatekeeper Network to verify against
+    pub gatekeeper_network: Pubkey,
     /// PDA bump
     pub bump: u8,
 }

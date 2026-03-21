@@ -4,6 +4,7 @@ pub mod constants;
 pub mod errors;
 pub mod instructions;
 pub mod state;
+pub mod utils;
 
 use instructions::*;
 
@@ -144,5 +145,19 @@ pub mod payclear {
         ctx: Context<AcceptExternalAttestation>,
     ) -> Result<()> {
         instructions::accept_external_attestation::handler(ctx)
+    }
+
+    // ─── Civic Gateway Integration ───────────────────────────
+
+    /// Initialize extra account meta list for Civic-enhanced transfer hook (Mode B + Civic)
+    pub fn initialize_civic_extra_account_meta_list(
+        ctx: Context<InitializeCivicExtraAccountMetaList>,
+    ) -> Result<()> {
+        instructions::initialize_civic_hook::handler_initialize_civic_extra_account_meta_list(ctx)
+    }
+
+    /// Civic-enhanced transfer hook — verifies Civic Gateway Tokens alongside PayClear attestations
+    pub fn civic_transfer_hook(ctx: Context<CivicTransferHook>, amount: u64) -> Result<()> {
+        instructions::civic_transfer_hook::handler_civic_transfer_hook(ctx, amount)
     }
 }

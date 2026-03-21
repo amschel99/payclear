@@ -3,6 +3,8 @@ import { randomBytes, createHash } from "crypto";
 import { db } from "../db/client.js";
 import { transfers, travelRuleData } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
+import { config } from "../config.js";
+import * as riskService from "./chainalysis/risk.service.js";
 import type { SubmitTransferInput } from "../schemas/transfer.schema.js";
 
 function generateNonce(): string {
@@ -84,6 +86,67 @@ export async function submitTransfer(
     });
   }
 
+  // ─── Chainalysis KYT Screening (pre-execution) ──────────────
+  let screeningStatus: string | null = null;
+  let screeningId: string | null = null;
+
+  if (config.chainalysis.apiKey) {
+    try {
+      const screenResult = await riskService.screenTransferPreExecution({
+        institutionId,
+        senderWallet: input.senderWallet,
+        receiverWallet: input.receiverWallet,
+        asset: input.mint,
+        amount: Number(input.amount),
+        transferReference: nonce,
+      });
+
+      screeningId = screenResult.screeningId ?? null;
+
+      if (!screenResult.approved) {
+        screeningStatus = screenResult.riskScore >= config.chainalysis.autoRejectThreshold
+          ? "blocked"
+          : "flagged";
+
+        await logAuditEvent({
+          institutionId,
+          eventType: "transfer.blocked",
+          entityType: "transfer",
+          actor,
+          details: {
+            nonce,
+            senderWallet: input.senderWallet,
+            receiverWallet: input.receiverWallet,
+            amount: input.amount,
+            riskScore: screenResult.riskScore,
+            rating: screenResult.rating,
+            exposures: screenResult.exposures,
+          },
+        });
+
+        // Reject immediately for high risk / severe
+        throw Object.assign(
+          new Error(
+            `Transfer blocked by compliance screening: ${screenResult.rating} ` +
+            `(score ${screenResult.riskScore}/100)`
+          ),
+          { statusCode: 403, rating: screenResult.rating, riskScore: screenResult.riskScore }
+        );
+      }
+
+      screeningStatus = "cleared";
+    } catch (err) {
+      // Re-throw if it's our intentional rejection
+      if ((err as { statusCode?: number }).statusCode === 403) {
+        throw err;
+      }
+      // Screening provider failure — log and proceed with "pending" status
+      // We don't want Chainalysis downtime to halt all transfers
+      console.error("Chainalysis screening failed, proceeding with pending status:", err);
+      screeningStatus = "pending";
+    }
+  }
+
   // Create the transfer record
   const [transfer] = await db
     .insert(transfers)
@@ -96,6 +159,8 @@ export async function submitTransfer(
       amount: BigInt(input.amount),
       status: 0, // pending
       travelRuleId,
+      screeningStatus,
+      screeningId,
     })
     .returning();
 
@@ -110,6 +175,7 @@ export async function submitTransfer(
       senderWallet: input.senderWallet,
       receiverWallet: input.receiverWallet,
       amount: input.amount,
+      screeningStatus,
     },
   });
 

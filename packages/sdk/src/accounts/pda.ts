@@ -8,6 +8,7 @@ const TRAVEL_RULE_SEED = Buffer.from("travel_rule");
 const TRANSFER_SEED = Buffer.from("transfer");
 const EXTRA_ACCOUNT_META_LIST_SEED = Buffer.from("extra-account-metas");
 const TRUST_NETWORK_SEED = Buffer.from("trust_network");
+const CIVIC_GATEWAY_SEED = Buffer.from("gateway");
 
 export function deriveRegistryPDA(
   programId: PublicKey
@@ -88,5 +89,31 @@ export function deriveTrustNetworkPDA(
   return PublicKey.findProgramAddressSync(
     [TRUST_NETWORK_SEED, institutionPda.toBuffer()],
     programId
+  );
+}
+
+/**
+ * Derive the Civic Gateway Token PDA for a given wallet and gatekeeper network.
+ *
+ * The Civic Gateway protocol derives token PDAs using:
+ *   seeds = [wallet, "gateway", 0u8, gatekeeper_network]
+ *
+ * @param wallet - The wallet public key that holds the Civic Pass
+ * @param gatekeeperNetwork - The gatekeeper network public key
+ * @param gatewayProgramId - The Civic Gateway program ID
+ */
+export function deriveCivicGatewayTokenPDA(
+  wallet: PublicKey,
+  gatekeeperNetwork: PublicKey,
+  gatewayProgramId: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      wallet.toBuffer(),
+      CIVIC_GATEWAY_SEED,
+      Buffer.from([0]),
+      gatekeeperNetwork.toBuffer(),
+    ],
+    gatewayProgramId
   );
 }

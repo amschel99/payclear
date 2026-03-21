@@ -93,4 +93,18 @@ pub enum PayClearError {
 
     #[msg("Cannot add own institution to trust network")]
     CannotTrustSelf,
+
+    // ─── Civic Gateway Errors ─────────────────────────────────
+
+    #[msg("Civic Pass is not active")]
+    CivicPassNotActive,
+
+    #[msg("Civic Pass not found for wallet")]
+    CivicPassNotFound,
+
+    #[msg("Civic Pass has expired")]
+    CivicPassExpired,
+
+    #[msg("Invalid gatekeeper network")]
+    InvalidGatekeeperNetwork,
 }

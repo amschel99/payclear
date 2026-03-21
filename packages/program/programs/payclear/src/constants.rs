@@ -34,3 +34,11 @@ pub const TRANSFER_STATUS_FLAGGED: u8 = 3;
 
 /// Max risk score
 pub const MAX_RISK_SCORE: u8 = 100;
+
+/// Civic Gateway PDA seed
+pub const CIVIC_GATEWAY_SEED: &[u8] = b"gateway";
+
+/// Civic Gateway Token states
+pub const CIVIC_GATEWAY_STATE_ACTIVE: u8 = 0;
+pub const CIVIC_GATEWAY_STATE_REVOKED: u8 = 1;
+pub const CIVIC_GATEWAY_STATE_FROZEN: u8 = 2;

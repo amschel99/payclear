@@ -48,4 +48,18 @@ export const config = {
     /** Hex-encoded 32-byte AES-256 master key for PII field encryption */
     masterKey: validateMasterKey(),
   },
+
+  chainalysis: {
+    apiKey: process.env.CHAINALYSIS_API_KEY || "",
+    baseUrl:
+      process.env.CHAINALYSIS_BASE_URL ||
+      "https://api.chainalysis.com/api/kyt/v2",
+    webhookSecret: process.env.CHAINALYSIS_WEBHOOK_SECRET || "",
+    autoRejectThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REJECT_THRESHOLD || "70"
+    ),
+    autoRevokeThreshold: parseInt(
+      process.env.CHAINALYSIS_AUTO_REVOKE_THRESHOLD || "85"
+    ),
+  },
 } as const;

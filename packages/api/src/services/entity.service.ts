@@ -2,6 +2,10 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { entities } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
+import {
+  hashKycCanonicalHex,
+  HASH_VERSION,
+} from "../utils/canonical.js";
 import type { CreateEntityInput, UpdateEntityInput } from "../schemas/entity.schema.js";
 import {
   buildKycMerkleTree,

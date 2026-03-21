@@ -18,6 +18,7 @@ export {
   deriveTravelRulePDA,
   deriveTransferPDA,
   deriveExtraAccountMetaListPDA,
+  deriveCivicGatewayTokenPDA,
 } from "./accounts/pda.js";
 
 // Account types
@@ -28,6 +29,7 @@ export type {
   CompliancePolicy,
   TravelRuleRecord,
   TransferRecord,
+  CivicGatewayToken,
   SerializedMerkleProof,
   SerializedMerkleProofItem,
   SerializedProofSibling,
@@ -39,6 +41,7 @@ export {
   KycLevel,
   TravelRuleStatus,
   TransferStatus,
+  CivicGatewayState,
 } from "./accounts/types.js";
 
 // Utilities

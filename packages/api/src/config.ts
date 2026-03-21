@@ -44,6 +44,17 @@ export const config = {
     maxRetries: 5,
   },
 
+  civic: {
+    /** Default Civic Gatekeeper Network public key (Civic Pass Uniqueness / KYC network) */
+    defaultGatekeeperNetwork:
+      process.env.CIVIC_DEFAULT_GATEKEEPER_NETWORK ||
+      "ignREusXmGrscGNUesoU9mxfds9AiYqSGGY9CPQZ1Fo",
+    /** Civic Gateway program ID */
+    gatewayProgramId:
+      process.env.CIVIC_GATEWAY_PROGRAM_ID ||
+      "gatem74V238djXdzWnJf94Wo1DcnuGkfijbf3AuBhfs",
+  },
+
   sumsub: {
     appToken: process.env.SUMSUB_APP_TOKEN || "",
     secretKey: process.env.SUMSUB_SECRET_KEY || "",

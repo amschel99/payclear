@@ -4,6 +4,7 @@ pub mod constants;
 pub mod errors;
 pub mod instructions;
 pub mod state;
+pub mod utils;
 
 use instructions::*;
 
@@ -102,5 +103,17 @@ pub mod payclear {
     /// Transfer hook handler — called automatically by Token-2022 (Mode B)
     pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
         instructions::transfer_hook::handler_transfer_hook(ctx, amount)
+    }
+
+    /// Initialize extra account meta list for Civic-enhanced transfer hook (Mode B + Civic)
+    pub fn initialize_civic_extra_account_meta_list(
+        ctx: Context<InitializeCivicExtraAccountMetaList>,
+    ) -> Result<()> {
+        instructions::initialize_civic_hook::handler_initialize_civic_extra_account_meta_list(ctx)
+    }
+
+    /// Civic-enhanced transfer hook — verifies Civic Gateway Tokens alongside PayClear attestations
+    pub fn civic_transfer_hook(ctx: Context<CivicTransferHook>, amount: u64) -> Result<()> {
+        instructions::civic_transfer_hook::handler_civic_transfer_hook(ctx, amount)
     }
 }

@@ -15,6 +15,8 @@ pub struct PolicyParams {
     pub blocked_jurisdictions: [u8; 64],
     pub max_transfer_amount: u64,
     pub daily_limit: u64,
+    pub require_civic_pass: bool,
+    pub gatekeeper_network: Pubkey,
 }
 
 #[derive(Accounts)]
@@ -61,6 +63,8 @@ pub fn handler(ctx: Context<SetCompliancePolicy>, params: PolicyParams) -> Resul
     policy.max_transfer_amount = params.max_transfer_amount;
     policy.daily_limit = params.daily_limit;
     policy.active = true;
+    policy.require_civic_pass = params.require_civic_pass;
+    policy.gatekeeper_network = params.gatekeeper_network;
     policy.bump = ctx.bumps.policy;
 
     Ok(())

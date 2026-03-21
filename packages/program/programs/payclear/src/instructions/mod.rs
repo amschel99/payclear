@@ -8,6 +8,8 @@ pub mod record_travel_rule;
 pub mod approve_travel_rule;
 pub mod execute_compliant_transfer;
 pub mod transfer_hook;
+pub mod civic_transfer_hook;
+pub mod initialize_civic_hook;
 
 pub use initialize_registry::*;
 pub use register_institution::*;
@@ -19,3 +21,5 @@ pub use record_travel_rule::*;
 pub use approve_travel_rule::*;
 pub use execute_compliant_transfer::*;
 pub use transfer_hook::*;
+pub use civic_transfer_hook::*;
+pub use initialize_civic_hook::*;

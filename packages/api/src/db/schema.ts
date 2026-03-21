@@ -57,6 +57,7 @@ export const entities = pgTable(
     kycHash: text("kyc_hash"), // hex-encoded Merkle root (computed from plaintext PII before encryption)
     merkleLeaves: jsonb("merkle_leaves"), // { fieldName: hexLeafHash } for proof generation
     encryptionVersion: integer("encryption_version").notNull().default(1), // for future algorithm rotation
+    civicPassAddress: text("civic_pass_address"),
     sumsubApplicantId: text("sumsub_applicant_id"),
     sumsubReviewStatus: text("sumsub_review_status"),
     sumsubVerificationLevel: text("sumsub_verification_level"),
@@ -93,6 +94,8 @@ export const compliancePolicies = pgTable(
     allowedJurisdictions: text("allowed_jurisdictions").array(),
     blockedJurisdictions: text("blocked_jurisdictions").array(),
     active: boolean("active").notNull().default(true),
+    requireCivicPass: boolean("require_civic_pass").notNull().default(false),
+    gatekeeperNetwork: text("gatekeeper_network"),
     onchainPubkey: text("onchain_pubkey"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

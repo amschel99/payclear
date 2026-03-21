@@ -46,6 +46,8 @@ export interface CompliancePolicy {
   maxTransferAmount: bigint;
   dailyLimit: bigint;
   active: boolean;
+  requireCivicPass: boolean;
+  gatekeeperNetwork: PublicKey;
   bump: number;
 }
 
@@ -77,6 +79,19 @@ export interface TransferRecord {
   status: number;
   timestamp: bigint;
   bump: number;
+}
+
+export interface CivicGatewayToken {
+  /** Feature flags byte */
+  features: number;
+  /** Token state: 0=Active, 1=Revoked, 2=Frozen */
+  state: number;
+  /** The gatekeeper network this token belongs to */
+  gatekeeperNetwork: PublicKey;
+  /** The issuing gatekeeper */
+  issuingGatekeeper: PublicKey;
+  /** Expiry timestamp (0 = no expiry) */
+  expireTime: bigint;
 }
 
 // ─── Selective Disclosure Types ──────────────────────────────────
@@ -146,4 +161,10 @@ export const TransferStatus = {
   Completed: 1,
   Failed: 2,
   Flagged: 3,
+} as const;
+
+export const CivicGatewayState = {
+  Active: 0,
+  Revoked: 1,
+  Frozen: 2,
 } as const;

@@ -1,149 +1,197 @@
-# PayClear
+# PayClear Protocol
 
 **Native Compliance Layer for Institutional Stablecoin Payments on Solana**
 
-PayClear wraps every stablecoin transfer on Solana with native compliance metadata — KYC attestations, KYT risk scores, and Travel Rule data are embedded in the transaction itself.
+> **StableHacks 2026** | Track: Programmable Stablecoin Payments
 
-## The Problem
+PayClear makes compliance the transaction. Every USDC payment on Solana is wrapped with on-chain compliance metadata — KYC attestations, KYT risk scores, and Travel Rule hashes are embedded in the transaction itself. Funds are locked until a trusted oracle confirms all compliance conditions are met.
 
-Institutions want to use stablecoins for cross-border B2B payments but can't because:
-- KYC/AML is bolted on after the transaction, not built into it
-- Travel Rule compliance (VASP-to-VASP data sharing) is manual and broken
-- Regulators can't audit on-chain flows because compliance data lives off-chain
-- There's no programmable "compliance gate" — payments either go through or don't
+---
 
-## The Solution
+## Quick Start (Demo in 5 minutes)
 
-PayClear provides two integration modes:
+### Prerequisites
 
-**Mode A — Direct Compliance Transfer**: Call `execute_compliant_transfer` to perform compliance checks then execute a token transfer via CPI. Works with any SPL token.
+- [Node.js](https://nodejs.org/) 20+
+- [pnpm](https://pnpm.io/) 9+ (`npm install -g pnpm`)
+- [PostgreSQL](https://www.postgresql.org/) 16+
+- [Redis](https://redis.io/) 7+
+- [Phantom Wallet](https://phantom.app/) browser extension (set to **Devnet**)
 
-**Mode B — Transfer Hook (Token-2022)**: Register PayClear as the transfer hook for a Token-2022 mint. Every `transfer_checked` call is automatically gated by compliance checks — invisible to the end user.
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/your-org/payclear.git
+cd payclear
+pnpm install
+```
+
+### 2. Set Up Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` — the defaults work for local PostgreSQL/Redis. You **must** set up an oracle keypair for on-chain attestations:
+
+```bash
+# Generate a devnet keypair for the oracle
+solana-keygen new -o oracle-keypair.json
+solana airdrop 2 $(solana address -k oracle-keypair.json) --url devnet
+
+# Add to .env:
+# ORACLE_PRIVATE_KEY=<paste the JSON array from oracle-keypair.json>
+# SOLANA_RPC_URL=https://api.devnet.solana.com
+```
+
+### 3. Set Up the Database
+
+```bash
+# macOS
+brew install postgresql@16 redis
+brew services start postgresql@16
+brew services start redis
+
+# Create database
+createdb payclear 2>/dev/null || true
+
+# Run migrations
+cd packages/api
+pnpm db:generate
+pnpm db:migrate
+cd ../..
+```
+
+### 4. Start the Stack
+
+Open **two terminal windows**:
+
+```bash
+# Terminal 1 — API (port 3000)
+cd packages/api
+pnpm dev
+```
+
+```bash
+# Terminal 2 — Frontend (port 3001)
+cd packages/web
+cp .env.local.example .env.local   # only needed first time
+pnpm dev
+```
+
+### 5. Open & Test
+
+| URL | What |
+|-----|------|
+| http://localhost:3001 | **Send Payment** — 4-step compliance flow |
+| http://localhost:3001/dashboard | **Dashboard** — Transaction history & stats |
+| http://localhost:3001/admin | **Admin Panel** — Oracle attestation controls |
+| http://localhost:3000/docs | **API Docs** — Swagger/OpenAPI |
+| http://localhost:3000/health | **Health Check** |
+
+### 6. Test the Full Flow
+
+1. Open http://localhost:3001
+2. Click **"Select Wallet"** — connect Phantom (make sure it's on **Devnet**)
+3. Enter a recipient name, a valid Solana wallet address, and a USDC amount
+4. Fill in KYC details (name, date of birth, nationality) — verification is instant (mocked Sumsub)
+5. Watch the compliance pipeline run automatically:
+   - **KYT Risk Scoring** — checks amount thresholds, wallet age, counterparty risk
+   - **Travel Rule Packaging** — hashes originator/beneficiary data, stores on-chain
+   - **Oracle Attestation** — signs a Solana Memo transaction (viewable on Explorer)
+6. Click **"View on Solana Explorer"** to verify the on-chain attestation
+
+> **Note:** The Dashboard and Admin pages display demo data and work without the API running. The Send flow requires the API to be running.
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Institutions                       │
-│              (Banks, Fintechs, VASPs)                │
-└──────────┬──────────────────────┬───────────────────┘
-           │                      │
-    ┌──────▼──────┐       ┌──────▼──────┐
-    │  REST API   │       │  SDK        │
-    │  (Fastify)  │       │  (TypeScript)│
-    └──────┬──────┘       └──────┬──────┘
-           │                      │
-    ┌──────▼──────────────────────▼──────┐
-    │         Solana Program (Anchor)     │
-    │                                     │
-    │  ┌─────────┐  ┌──────────────────┐ │
-    │  │Registry │  │  KYC Attestations│ │
-    │  └─────────┘  └──────────────────┘ │
-    │  ┌─────────────┐  ┌─────────────┐  │
-    │  │  Compliance  │  │Travel Rule  │  │
-    │  │  Policies    │  │Records      │  │
-    │  └─────────────┘  └─────────────┘  │
-    │  ┌──────────────────────────────┐   │
-    │  │ Compliance Gate (Transfer)   │   │
-    │  │ + Token-2022 Transfer Hook   │   │
-    │  └──────────────────────────────┘   │
-    └─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                          Frontend                               │
+│               Next.js · Wallet Adapter · Tailwind               │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ HTTP
+┌───────────────────────────▼─────────────────────────────────────┐
+│                     Compliance API                              │
+│                                                                 │
+│  POST /api/kyc/verify      →  KYC via Sumsub (mock)            │
+│  POST /api/kyt/score       →  4-factor risk scoring engine     │
+│  POST /api/travel-rule/package → IVMS101 data + SHA-256 hash   │
+│  POST /api/oracle/attest   →  Signs Solana Memo tx on-chain   │
+│                                                                 │
+│  POST /v1/institutions     →  VASP registration (API key auth) │
+│  POST /v1/entities         →  KYC entity management            │
+│  POST /v1/transfers        →  Institutional transfers          │
+│  GET  /v1/audit/*          →  Audit trail                      │
+└────────┬───────────────────────────────────┬────────────────────┘
+         │                                   │
+    ┌────▼────┐                    ┌────────▼──────────┐
+    │PostgreSQL│                    │   Solana Devnet   │
+    │ Off-chain│                    │                   │
+    │ KYC/PII │                    │  Anchor Program   │
+    │ Records  │                    │  (KYC PDAs,       │
+    │ Audit Log│                    │   Travel Rule,    │
+    └─────────┘                    │   Transfer Hook)  │
+         │                         │                   │
+    ┌────▼────┐                    │  Memo Program     │
+    │  Redis  │                    │  (Oracle Attest)  │
+    │  Queue  │                    └───────────────────┘
+    └─────────┘
 ```
+
+### Key Design
+
+- **Hash-only on-chain** — Full PII stays in PostgreSQL. Only SHA-256 hashes stored on-chain.
+- **Oracle attestation** — A trusted keypair signs a Solana Memo transaction as proof of compliance clearance. Verifiable by anyone on Explorer.
+- **KYT risk scoring** — 4-factor engine: amount thresholds, wallet age (Solana RPC), historical volume, counterparty risk. Score 0–100, threshold at 70.
+- **Travel Rule (FATF)** — IVMS101 originator/beneficiary data packaged, hashed, and anchored on-chain via nonce linking.
+- **Dual transfer modes** — Mode A: explicit `execute_compliant_transfer` via CPI. Mode B: Token-2022 transfer hook auto-gates every transfer.
+
+---
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `packages/program` | Anchor Solana program — on-chain compliance logic |
-| `packages/api` | Fastify REST API — institutional interface |
-| `packages/sdk` | TypeScript SDK — `@payclear/sdk` |
-| `packages/docs` | Documentation |
+| Package | Description | Dev Command |
+|---------|-------------|-------------|
+| `packages/web` | Next.js 14 frontend — send flow, dashboard, admin panel | `pnpm dev` (port 3001) |
+| `packages/api` | Fastify REST API — compliance endpoints + institutional API | `pnpm dev` (port 3000) |
+| `packages/program` | Anchor Solana program — on-chain compliance logic | `anchor build && anchor test` |
+| `packages/sdk` | TypeScript SDK — `@payclear/sdk` | `pnpm build` |
+| `packages/docs` | Architecture & compliance documentation | — |
 
-## Quick Start
+---
 
-### Prerequisites
+## Compliance Endpoints (Public)
 
-- [Rust](https://rustup.rs/) (1.75+)
-- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (1.18+)
-- [Anchor](https://www.anchor-lang.com/docs/installation) (0.30+)
-- [Node.js](https://nodejs.org/) (20+)
-- [pnpm](https://pnpm.io/) (9+)
-- PostgreSQL (16+)
-- Redis (7+)
-
-### Install
+These power the frontend's compliance flow. No API key required.
 
 ```bash
-git clone https://github.com/your-org/paystable.git
-cd paystable
-pnpm install
+# 1. KYC Verification (mock Sumsub)
+curl -X POST http://localhost:3000/api/kyc/verify \
+  -H "Content-Type: application/json" \
+  -d '{"wallet":"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU","fullName":"John Doe","dateOfBirth":"1990-01-15","nationality":"US"}'
+
+# 2. KYT Risk Scoring
+curl -X POST http://localhost:3000/api/kyt/score \
+  -H "Content-Type: application/json" \
+  -d '{"senderWallet":"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU","receiverWallet":"DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC86PZ8okm21hy","amount":5000,"currency":"USDC"}'
+
+# 3. Travel Rule Packaging
+curl -X POST http://localhost:3000/api/travel-rule/package \
+  -H "Content-Type: application/json" \
+  -d '{"originator":{"name":"John Doe","wallet":"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU","institution":"Acme VASP"},"beneficiary":{"name":"Jane Smith","wallet":"DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC86PZ8okm21hy","institution":"Beta VASP"},"amount":5000,"currency":"USDC"}'
+
+# 4. Oracle Attestation (submits Solana Memo tx)
+curl -X POST http://localhost:3000/api/oracle/attest \
+  -H "Content-Type: application/json" \
+  -d '{"transferNonce":"<nonce from step 3>"}'
 ```
 
-### Build the Solana Program
+---
 
-```bash
-cd packages/program
-anchor build
-anchor test
-```
-
-### Run the API
-
-```bash
-cp .env.example .env
-# Edit .env with your database and Solana RPC settings
-
-cd packages/api
-pnpm db:migrate
-pnpm dev
-```
-
-API docs available at `http://localhost:3000/docs`
-
-### Use the SDK
-
-```typescript
-import { PayClearClient, toInstitutionId } from "@payclear/sdk";
-import { Connection, Keypair } from "@solana/web3.js";
-
-const client = new PayClearClient({
-  connection: new Connection("http://localhost:8899"),
-  wallet: yourWallet,
-  programId: PROGRAM_ID,
-});
-
-// Register an institution
-await client.registerInstitution({
-  name: "Acme Bank",
-  vaspCode: "ACMEBANK",
-  jurisdiction: "US",
-  institutionAuthority: bankKeypair.publicKey,
-});
-
-// Create KYC attestation for a wallet
-await client.createKycAttestation({
-  institutionId: toInstitutionId("Acme Bank"),
-  wallet: customerWallet,
-  kycData: { fullName: "John Doe", nationality: "US" },
-  kycLevel: 2, // Enhanced
-  riskScore: 15,
-});
-
-// Execute a compliant transfer
-const result = await client.executeCompliantTransfer({
-  senderTokenAccount,
-  receiverTokenAccount,
-  receiverWallet,
-  mint: USDC_MINT,
-  amount: 1000000n, // 1 USDC
-  policyInstitution: institutionPda,
-  policyId: policyIdBuffer,
-  senderInstitution: institutionPda,
-  receiverInstitution: institutionPda,
-});
-```
-
-## API Endpoints
+## Institutional API Endpoints (API Key Auth)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -157,13 +205,14 @@ const result = await client.executeCompliantTransfer({
 | GET | `/v1/policies` | List policies |
 | POST | `/v1/transfers` | Submit compliant transfer |
 | GET | `/v1/transfers/:nonce` | Get transfer status |
-| POST | `/v1/travel-rule` | Submit Travel Rule data |
 | GET | `/v1/audit/transfers` | Audit trail |
 | POST | `/v1/webhooks` | Register webhook |
 
-## On-Chain Accounts
+Full interactive docs at http://localhost:3000/docs
 
-All accounts are PDAs derived deterministically:
+---
+
+## On-Chain Accounts (PDAs)
 
 | Account | Seeds | Purpose |
 |---------|-------|---------|
@@ -174,14 +223,121 @@ All accounts are PDAs derived deterministically:
 | TravelRuleRecord | `["travel_rule", nonce]` | FATF Travel Rule |
 | TransferRecord | `["transfer", nonce]` | Transfer receipt |
 
-## Contributing
+---
 
-1. Fork the repo
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Follow the modular structure — each instruction is in its own file
-4. Add tests for new instructions in `packages/program/tests/`
-5. Run `anchor test` before submitting
-6. Submit a PR with a clear description
+## Full Development Setup
+
+For building the Solana program and SDK, you'll also need:
+
+- [Rust](https://rustup.rs/) 1.75+
+- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) 1.18+
+- [Anchor](https://www.anchor-lang.com/docs/installation) 0.30+
+
+See [SETUP.md](SETUP.md) for detailed installation instructions for all dependencies.
+
+### Build Everything
+
+```bash
+pnpm build          # Build all packages via Turborepo
+pnpm test           # Run all tests
+pnpm lint           # Lint all packages
+```
+
+### Solana Program
+
+```bash
+cd packages/program
+anchor build
+anchor test --skip-local-validator
+
+# Deploy to devnet
+solana config set --url devnet
+solana airdrop 5
+anchor deploy --provider.cluster devnet
+```
+
+### SDK
+
+```bash
+cd packages/sdk
+pnpm build           # Outputs CJS + ESM + types
+pnpm test
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | Yes | `postgresql://payclear:payclear@localhost:5432/payclear` | PostgreSQL connection |
+| `REDIS_URL` | Yes | `redis://localhost:6379` | Redis connection |
+| `SOLANA_RPC_URL` | Yes | `https://api.devnet.solana.com` | Solana RPC endpoint |
+| `ORACLE_PRIVATE_KEY` | For attestations | — | Oracle keypair JSON array |
+| `ANCHOR_WALLET` | Fallback for oracle | `~/.config/solana/id.json` | Keypair file path |
+| `PROGRAM_ID` | For full program | — | Deployed Anchor program ID |
+| `API_PORT` | No | `3000` | API server port |
+| `SUMSUB_APP_TOKEN` | For real KYC | — | Sumsub API token |
+| `SUMSUB_APP_SECRET` | For real KYC | — | Sumsub API secret |
+| `WEBHOOK_SIGNING_SECRET` | No | `dev-secret` | Webhook HMAC secret |
+| `NEXT_PUBLIC_API_URL` | No | `http://localhost:3000` | Frontend → API URL |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | No | `https://api.devnet.solana.com` | Frontend Solana RPC |
+
+---
+
+## Troubleshooting
+
+### Frontend won't connect to API
+Make sure the API is running on port 3000. Check `packages/web/.env.local` has `NEXT_PUBLIC_API_URL=http://localhost:3000`.
+
+### Oracle attestation fails
+You need a funded devnet keypair. Set `ORACLE_PRIVATE_KEY` in `.env` to the JSON array from your keypair file, or set `ANCHOR_WALLET` to the file path. Airdrop SOL: `solana airdrop 2 <address> --url devnet`.
+
+### Database connection refused
+```bash
+# macOS
+brew services start postgresql@16
+
+# Linux
+sudo systemctl start postgresql
+
+# Verify
+psql -U payclear -d payclear -c "SELECT 1"
+```
+
+### Redis connection refused
+```bash
+# macOS
+brew services start redis
+
+# Linux
+sudo systemctl start redis
+
+# Verify
+redis-cli ping  # → PONG
+```
+
+### Phantom wallet not connecting
+Make sure Phantom is set to **Devnet**: Settings → Developer Settings → Change Network → Devnet.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14, React 18, Tailwind CSS, Solana Wallet Adapter |
+| API | Fastify 4, Zod, Drizzle ORM, BullMQ |
+| Database | PostgreSQL 16, Redis 7 |
+| Blockchain | Solana (devnet), Anchor 0.30, SPL Token, Token-2022 |
+| Build | pnpm 9, Turborepo 2, tsup, Vitest |
+| CI/CD | GitHub Actions (4 workflows) |
+
+---
+
+## Market
+
+Starting with African cross-border trade corridors — Kenya, Nigeria, Uganda, Ghana — where $50B+ in annual B2B payments still move on slow, expensive SWIFT rails.
 
 ## License
 

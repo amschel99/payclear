@@ -5,6 +5,7 @@ import {
   boolean,
   timestamp,
   smallint,
+  integer,
   bigint,
   jsonb,
   bigserial,
@@ -25,6 +26,7 @@ export const institutions = pgTable("institutions", {
   onchainPubkey: text("onchain_pubkey").notNull().unique(),
   authorityPubkey: text("authority_pubkey").notNull(),
   apiKeyHash: text("api_key_hash").notNull(),
+  encryptedDek: text("encrypted_dek"), // AES-256-GCM wrapped DEK (base64), encrypted by master key
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -43,16 +45,18 @@ export const entities = pgTable(
     kycLevel: smallint("kyc_level").notNull().default(0),
     riskScore: smallint("risk_score").notNull().default(0),
     status: smallint("status").notNull().default(0),
-    fullName: text("full_name"),
-    dateOfBirth: date("date_of_birth"),
-    nationality: char("nationality", { length: 2 }),
-    governmentIdType: text("government_id_type"),
-    governmentIdHash: text("government_id_hash"),
-    addressLine1: text("address_line1"),
-    addressCity: text("address_city"),
-    addressCountry: char("address_country", { length: 2 }),
+    fullName: text("full_name"), // AES-256-GCM encrypted PII
+    dateOfBirth: text("date_of_birth"), // AES-256-GCM encrypted PII (stored as encrypted text, not date)
+    nationality: text("nationality"), // AES-256-GCM encrypted PII (stored as encrypted text, not char(2))
+    governmentIdType: text("government_id_type"), // AES-256-GCM encrypted PII
+    governmentIdHash: text("government_id_hash"), // AES-256-GCM encrypted PII
+    addressLine1: text("address_line1"), // AES-256-GCM encrypted PII
+    addressCity: text("address_city"), // AES-256-GCM encrypted PII
+    addressCountry: text("address_country"), // AES-256-GCM encrypted PII (stored as encrypted text, not char(2))
     onchainPubkey: text("onchain_pubkey"),
-    kycHash: text("kyc_hash"), // hex-encoded
+    kycHash: text("kyc_hash"), // hex-encoded Merkle root (computed from plaintext PII before encryption)
+    merkleLeaves: jsonb("merkle_leaves"), // { fieldName: hexLeafHash } for proof generation
+    encryptionVersion: integer("encryption_version").notNull().default(1), // for future algorithm rotation
     sumsubApplicantId: text("sumsub_applicant_id"),
     sumsubReviewStatus: text("sumsub_review_status"),
     sumsubVerificationLevel: text("sumsub_verification_level"),
@@ -134,6 +138,30 @@ export const travelRuleData = pgTable("travel_rule_data", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ─── Screening Results (Chainalysis KYT) ────────────────────
+
+export const screeningResults = pgTable(
+  "screening_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    transferId: uuid("transfer_id"),
+    entityId: uuid("entity_id"),
+    provider: text("provider").notNull(), // "chainalysis"
+    externalId: text("external_id").notNull(), // Chainalysis transfer/entity ID
+    rating: text("rating").notNull(), // lowRisk/mediumRisk/highRisk/severe
+    riskScore: smallint("risk_score").notNull(), // 0-100 PayClear scale
+    rawScore: text("raw_score"), // original Chainalysis score
+    exposures: jsonb("exposures"), // array of exposure objects
+    screenedAt: timestamp("screened_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_screening_transfer").on(table.transferId),
+    index("idx_screening_entity").on(table.entityId),
+    index("idx_screening_external").on(table.externalId),
+  ]
+);
+
 // ─── Transfers ───────────────────────────────────────────────
 
 export const transfers = pgTable(
@@ -156,6 +184,8 @@ export const transfers = pgTable(
     senderRiskScore: smallint("sender_risk_score"),
     receiverRiskScore: smallint("receiver_risk_score"),
     travelRuleId: uuid("travel_rule_id").references(() => travelRuleData.id),
+    screeningStatus: text("screening_status"), // 'pending' | 'cleared' | 'flagged' | 'blocked'
+    screeningId: uuid("screening_id"),
     errorMessage: text("error_message"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
@@ -165,6 +195,7 @@ export const transfers = pgTable(
     index("idx_transfers_sender").on(table.senderWallet),
     index("idx_transfers_receiver").on(table.receiverWallet),
     index("idx_transfers_created").on(table.createdAt),
+    index("idx_transfers_screening").on(table.screeningStatus),
   ]
 );
 

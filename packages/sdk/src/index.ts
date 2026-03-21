@@ -28,6 +28,10 @@ export type {
   CompliancePolicy,
   TravelRuleRecord,
   TransferRecord,
+  SerializedMerkleProof,
+  SerializedMerkleProofItem,
+  SerializedProofSibling,
+  DisclosureProofResponse,
 } from "./accounts/types.js";
 
 export {
@@ -45,3 +49,38 @@ export {
   toInstitutionId,
   generateNonce,
 } from "./utils/hash.js";
+
+// Merkle tree for selective disclosure
+export {
+  buildKycMerkleTree,
+  getMerkleRoot,
+  generateProof,
+  verifyProof,
+  hashLeaf,
+} from "./utils/merkle.js";
+
+export type {
+  KycFieldMap,
+  MerkleTree,
+  MerkleNode,
+  MerkleProof,
+  MerkleProofItem,
+  ProofSibling,
+} from "./utils/merkle.js";
+
+// KYC field schema
+export {
+  KYC_FIELD_CATEGORY,
+  KYC_FIELD_DEFINITIONS,
+  VALID_KYC_FIELD_NAMES,
+  SORTED_KYC_FIELD_NAMES,
+  FIELD_CATEGORY_MAP,
+  PUBLIC_FIELD_NAMES,
+  PRIVATE_FIELD_NAMES,
+  validateFieldNames,
+} from "./utils/kyc-fields.js";
+
+export type {
+  KycFieldCategory,
+  KycFieldDefinition,
+} from "./utils/kyc-fields.js";

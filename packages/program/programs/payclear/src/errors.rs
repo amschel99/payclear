@@ -107,4 +107,18 @@ pub enum PayClearError {
 
     #[msg("Invalid gatekeeper network")]
     InvalidGatekeeperNetwork,
+
+    // ─── ZK Proof Errors ──────────────────────────────────────
+
+    #[msg("ZK proof has expired")]
+    ZkProofExpired,
+
+    #[msg("ZK proof is invalid")]
+    ZkProofInvalid,
+
+    #[msg("Attestor is not trusted")]
+    UntrustedAttestor,
+
+    #[msg("This proof has already been recorded")]
+    ProofAlreadyRecorded,
 }

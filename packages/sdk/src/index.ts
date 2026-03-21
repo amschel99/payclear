@@ -7,6 +7,7 @@ export type {
   TransferParams,
   TravelRuleParams,
   TransferResult,
+  RecordZkProofParams,
 } from "./client.js";
 
 // PDA derivation helpers
@@ -19,6 +20,7 @@ export {
   deriveTransferPDA,
   deriveExtraAccountMetaListPDA,
   deriveCivicGatewayTokenPDA,
+  deriveZkProofPDA,
 } from "./accounts/pda.js";
 
 // Account types
@@ -34,6 +36,7 @@ export type {
   SerializedMerkleProofItem,
   SerializedProofSibling,
   DisclosureProofResponse,
+  ZkProofRecord,
 } from "./accounts/types.js";
 
 export {
@@ -42,6 +45,7 @@ export {
   TravelRuleStatus,
   TransferStatus,
   CivicGatewayState,
+  ZkProofStatus,
 } from "./accounts/types.js";
 
 // Utilities
@@ -87,3 +91,18 @@ export type {
   KycFieldCategory,
   KycFieldDefinition,
 } from "./utils/kyc-fields.js";
+
+// Reclaim Protocol types
+export type {
+  ReclaimProof,
+  ClaimData,
+  WitnessData,
+  PayClearKycClaim,
+  VerificationResult,
+  ProofRequest,
+} from "./utils/reclaim-types.js";
+
+export {
+  ACCEPTED_KYC_PROVIDERS,
+  ZkProofStatus as ReclaimZkProofStatus,
+} from "./utils/reclaim-types.js";

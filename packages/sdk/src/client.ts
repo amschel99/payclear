@@ -27,6 +27,7 @@ import type {
   TravelRuleRecord,
   TrustNetwork,
   CivicGatewayToken,
+  ZkProofRecord,
 } from "./accounts/types.js";
 import { CivicGatewayState } from "./accounts/types.js";
 
@@ -86,6 +87,17 @@ export interface TransferParams {
   nonce?: Buffer;
   travelRuleNonce?: Buffer; // Required if amount >= travel rule threshold
   tokenProgramId?: PublicKey; // Defaults to TOKEN_PROGRAM_ID
+}
+
+export interface RecordZkProofParams {
+  institutionId: Buffer;
+  wallet: PublicKey;
+  proofIdentifier: Buffer; // 32-byte SHA-256 hash of the Reclaim proof identifier
+  provider: string; // KYC provider name (will be padded to 32 bytes)
+  kycLevel: number;
+  verifiedAt: number; // Unix timestamp
+  expiresAt: number; // Unix timestamp (0 = no expiry)
+  attestor: PublicKey; // Reclaim attestor public key
 }
 
 export interface TravelRuleParams {
@@ -561,7 +573,7 @@ export class PayClearClient {
 
   /**
    * Accept an external KYC attestation from a trusted institution, creating a
-   * new attestation under the accepting institution. No PII is re-shared —
+   * new attestation under the accepting institution. No PII is re-shared --
    * only the attestation metadata (KYC level, risk score, hash) is portable.
    */
   async acceptExternalAttestation(
@@ -607,6 +619,44 @@ export class PayClearClient {
       .rpc();
   }
 
+  // ─── ZK Proof Records ──────────────────────────────────────
+
+  async recordZkProof(
+    params: RecordZkProofParams
+  ): Promise<TransactionSignature> {
+    const [institutionPda] = pda.deriveInstitutionPDA(
+      params.institutionId,
+      this.programId
+    );
+    const [zkProofPda] = pda.deriveZkProofPDA(
+      institutionPda,
+      params.wallet,
+      params.proofIdentifier,
+      this.programId
+    );
+
+    const providerBuffer = Buffer.alloc(32);
+    Buffer.from(params.provider).copy(providerBuffer);
+
+    return this.program.methods
+      .recordZkProof(
+        Array.from(params.proofIdentifier),
+        Array.from(providerBuffer),
+        params.kycLevel,
+        new BN(params.verifiedAt),
+        new BN(params.expiresAt),
+        params.attestor
+      )
+      .accounts({
+        institution: institutionPda,
+        wallet: params.wallet,
+        zkProofRecord: zkProofPda,
+        authority: this.provider.wallet.publicKey,
+        systemProgram: PublicKey.default,
+      })
+      .rpc();
+  }
+
   /**
    * Fetch the trust network account for an institution.
    */
@@ -620,6 +670,25 @@ export class PayClearClient {
 
     try {
       return await this.accounts.trustNetwork.fetch(trustNetworkPda);
+    } catch {
+      return null;
+    }
+  }
+
+  async getZkProofRecord(
+    institution: PublicKey,
+    wallet: PublicKey,
+    proofIdentifier: Buffer
+  ): Promise<ZkProofRecord | null> {
+    const [zkProofPda] = pda.deriveZkProofPDA(
+      institution,
+      wallet,
+      proofIdentifier,
+      this.programId
+    );
+
+    try {
+      return await this.program.account.zkProofRecord.fetch(zkProofPda);
     } catch {
       return null;
     }
@@ -842,4 +911,5 @@ export class PayClearClient {
   static deriveExtraAccountMetaListPDA = pda.deriveExtraAccountMetaListPDA;
   static deriveTrustNetworkPDA = pda.deriveTrustNetworkPDA;
   static deriveCivicGatewayTokenPDA = pda.deriveCivicGatewayTokenPDA;
+  static deriveZkProofPDA = pda.deriveZkProofPDA;
 }

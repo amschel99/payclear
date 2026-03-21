@@ -63,6 +63,8 @@ export const entities = pgTable(
     sumsubVerificationLevel: text("sumsub_verification_level"),
     sasAttestationAddress: text("sas_attestation_address"),
     kycProvider: text("kyc_provider").default("self"), // 'self' | 'sumsub'
+    zkProofId: uuid("zk_proof_id"),
+    kycProofSource: text("kyc_proof_source"), // 'direct', 'sumsub', 'reclaim'
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     /// If this entity was created by accepting an external attestation, this
     /// references the institution that originally performed the KYC.
@@ -105,6 +107,35 @@ export const trustNetwork = pgTable(
   (table) => [
     unique().on(table.institutionId, table.trustedInstitutionId),
     index("idx_trust_network_institution").on(table.institutionId),
+  ]
+);
+
+// ─── ZK Proofs (Reclaim Protocol) ─────────────────────────────
+
+export const zkProofs = pgTable(
+  "zk_proofs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id),
+    entityId: uuid("entity_id"),
+    walletAddress: text("wallet_address").notNull(),
+    proofIdentifier: text("proof_identifier").notNull().unique(),
+    provider: text("provider").notNull(),
+    kycLevel: smallint("kyc_level").notNull(),
+    reclaimProofData: jsonb("reclaim_proof_data").notNull(),
+    attestorId: text("attestor_id").notNull(),
+    status: text("status").notNull().default("verified"),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    onchainAddress: text("onchain_address"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_zk_proofs_wallet").on(table.walletAddress),
+    index("idx_zk_proofs_institution").on(table.institutionId),
+    index("idx_zk_proofs_identifier").on(table.proofIdentifier),
   ]
 );
 

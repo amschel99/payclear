@@ -42,3 +42,12 @@ pub const CIVIC_GATEWAY_SEED: &[u8] = b"gateway";
 pub const CIVIC_GATEWAY_STATE_ACTIVE: u8 = 0;
 pub const CIVIC_GATEWAY_STATE_REVOKED: u8 = 1;
 pub const CIVIC_GATEWAY_STATE_FROZEN: u8 = 2;
+
+/// ZK proof PDA seed
+pub const ZK_PROOF_SEED: &[u8] = b"zk_proof";
+
+/// ZK proof status values
+pub const ZK_PROOF_STATUS_PENDING: u8 = 0;
+pub const ZK_PROOF_STATUS_VERIFIED: u8 = 1;
+pub const ZK_PROOF_STATUS_EXPIRED: u8 = 2;
+pub const ZK_PROOF_STATUS_REVOKED: u8 = 3;

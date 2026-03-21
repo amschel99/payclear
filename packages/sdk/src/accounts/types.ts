@@ -109,6 +109,20 @@ export interface CivicGatewayToken {
   expireTime: bigint;
 }
 
+export interface ZkProofRecord {
+  institution: PublicKey;
+  wallet: PublicKey;
+  proofIdentifier: Uint8Array; // 32 bytes (SHA-256 of Reclaim proof identifier)
+  provider: Uint8Array; // 32 bytes (padded provider name)
+  kycLevel: number;
+  verifiedAt: bigint;
+  expiresAt: bigint;
+  attestor: PublicKey;
+  status: number;
+  createdAt: bigint;
+  bump: number;
+}
+
 // ─── Selective Disclosure Types ──────────────────────────────────
 
 /**
@@ -149,6 +163,7 @@ export interface DisclosureProofResponse {
   proof: SerializedMerkleProof;
 }
 
+
 // Status enums
 export const KycStatus = {
   Pending: 0,
@@ -182,4 +197,11 @@ export const CivicGatewayState = {
   Active: 0,
   Revoked: 1,
   Frozen: 2,
+} as const;
+
+export const ZkProofStatus = {
+  Pending: 0,
+  Verified: 1,
+  Expired: 2,
+  Revoked: 3,
 } as const;

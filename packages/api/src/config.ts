@@ -85,4 +85,13 @@ export const config = {
       process.env.CHAINALYSIS_AUTO_REVOKE_THRESHOLD || "85"
     ),
   },
+
+  reclaim: {
+    appId: process.env.RECLAIM_APP_ID || "",
+    appSecret: process.env.RECLAIM_APP_SECRET || "",
+    trustedAttestors: (process.env.RECLAIM_TRUSTED_ATTESTORS || "")
+      .split(",")
+      .filter(Boolean),
+    proofTtlSeconds: parseInt(process.env.RECLAIM_PROOF_TTL || "86400"), // 24 hours
+  },
 } as const;

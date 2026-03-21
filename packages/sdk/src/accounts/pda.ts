@@ -9,6 +9,7 @@ const TRANSFER_SEED = Buffer.from("transfer");
 const EXTRA_ACCOUNT_META_LIST_SEED = Buffer.from("extra-account-metas");
 const TRUST_NETWORK_SEED = Buffer.from("trust_network");
 const CIVIC_GATEWAY_SEED = Buffer.from("gateway");
+const ZK_PROOF_SEED = Buffer.from("zk_proof");
 
 export function deriveRegistryPDA(
   programId: PublicKey
@@ -115,5 +116,17 @@ export function deriveCivicGatewayTokenPDA(
       gatekeeperNetwork.toBuffer(),
     ],
     gatewayProgramId
+  );
+}
+
+export function deriveZkProofPDA(
+  institution: PublicKey,
+  wallet: PublicKey,
+  proofIdentifier: Buffer,
+  programId: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [ZK_PROOF_SEED, institution.toBuffer(), wallet.toBuffer(), proofIdentifier],
+    programId
   );
 }

@@ -12,6 +12,8 @@ pub mod manage_trust_network;
 pub mod accept_external_attestation;
 pub mod civic_transfer_hook;
 pub mod initialize_civic_hook;
+pub mod record_zk_proof;
+pub mod verify_zk_attestation;
 
 pub use initialize_registry::*;
 pub use register_institution::*;
@@ -27,3 +29,5 @@ pub use manage_trust_network::*;
 pub use accept_external_attestation::*;
 pub use civic_transfer_hook::*;
 pub use initialize_civic_hook::*;
+pub use record_zk_proof::*;
+pub use verify_zk_attestation::*;

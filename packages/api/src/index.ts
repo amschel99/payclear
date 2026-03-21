@@ -13,6 +13,7 @@ import { webhookRoutes } from "./routes/webhooks.js";
 import { trustRoutes } from "./routes/trust.js";
 import { sumsubWebhookRoutes } from "./routes/sumsub-webhook.js";
 import { chainalysisRoutes } from "./routes/chainalysis.js";
+import { reclaimRoutes } from "./routes/reclaim.js";
 
 const app = Fastify({ logger: true });
 
@@ -59,6 +60,7 @@ async function start() {
   await app.register(trustRoutes);
   await app.register(sumsubWebhookRoutes);
   await app.register(chainalysisRoutes);
+  await app.register(reclaimRoutes);
 
   // Health check
   app.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

@@ -25,7 +25,10 @@ export type AuditEventType =
   | "screening.flagged"
   | "screening.blocked"
   | "webhook.created"
-  | "webhook.deleted";
+  | "webhook.deleted"
+  | "zk_proof.verified"
+  | "zk_proof.expired"
+  | "zk_proof.revoked";
 
 export async function logAuditEvent(params: {
   institutionId: string;

@@ -72,6 +72,7 @@ pub fn handler(ctx: Context<VerifyZkAttestation>) -> Result<()> {
     attestation.risk_score = 0; // ZK proofs don't carry risk scores; default to 0
     attestation.status = KYC_STATUS_ACTIVE;
     attestation.expires_at = proof.expires_at;
+    attestation.original_institution = Pubkey::default();
     attestation.created_at = now;
     attestation.updated_at = now;
     attestation.bump = ctx.bumps.attestation;

@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm";
 import { randomBytes, createHash } from "crypto";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { AnchorProvider, Program, Wallet, BN } from "@coral-xyz/anchor";
+import { readFileSync } from "fs";
 import { db } from "../db/client.js";
-import { transfers, travelRuleData } from "../db/schema.js";
+import { transfers, travelRuleData, institutions } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
 import { config } from "../config.js";
 import * as riskService from "./chainalysis/risk.service.js";
@@ -179,10 +182,155 @@ export async function submitTransfer(
     },
   });
 
-  // TODO: Build and submit the on-chain transaction via solana.service
-  // For now, return the pending transfer record
+  // ─── Build and submit the on-chain transaction ──────────────
+  try {
+    const programId = new PublicKey(config.solana.programId);
+    const connection = new Connection(config.solana.rpcUrl, "confirmed");
 
-  return transfer;
+    // Load authority keypair
+    const walletPath = config.solana.walletPath.replace("~", process.env.HOME || "");
+    const keyData = JSON.parse(readFileSync(walletPath, "utf-8")) as number[];
+    const authorityKeypair = Keypair.fromSecretKey(Uint8Array.from(keyData));
+    const wallet = new Wallet(authorityKeypair);
+
+    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+
+    // Load the program (IDL placeholder — matches SDK approach)
+    const program = new Program(
+      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+      provider
+    );
+
+    // Derive PDAs
+    const nonceBuffer = Buffer.from(nonce, "hex");
+
+    const REGISTRY_SEED = Buffer.from("registry");
+    const INSTITUTION_SEED = Buffer.from("institution");
+    const KYC_SEED = Buffer.from("kyc");
+    const POLICY_SEED = Buffer.from("policy");
+    const TRANSFER_SEED = Buffer.from("transfer");
+
+    // Look up institution on-chain pubkey and institution_id
+    const [inst] = await db
+      .select()
+      .from(institutions)
+      .where(eq(institutions.id, institutionId));
+
+    const institutionIdBytes = Buffer.from(inst.institutionId, "hex");
+
+    const [registryPda] = PublicKey.findProgramAddressSync(
+      [REGISTRY_SEED],
+      programId
+    );
+    const [institutionPda] = PublicKey.findProgramAddressSync(
+      [INSTITUTION_SEED, institutionIdBytes],
+      programId
+    );
+
+    const senderPubkey = new PublicKey(input.senderWallet);
+    const receiverPubkey = new PublicKey(input.receiverWallet);
+
+    const [senderAttestationPda] = PublicKey.findProgramAddressSync(
+      [KYC_SEED, institutionPda.toBuffer(), senderPubkey.toBuffer()],
+      programId
+    );
+    const [receiverAttestationPda] = PublicKey.findProgramAddressSync(
+      [KYC_SEED, institutionPda.toBuffer(), receiverPubkey.toBuffer()],
+      programId
+    );
+
+    const policyIdBuffer = Buffer.from(input.policyId, "hex");
+    const [policyPda] = PublicKey.findProgramAddressSync(
+      [POLICY_SEED, institutionPda.toBuffer(), policyIdBuffer],
+      programId
+    );
+    const [transferRecordPda] = PublicKey.findProgramAddressSync(
+      [TRANSFER_SEED, nonceBuffer],
+      programId
+    );
+
+    const mintPubkey = new PublicKey(input.mint);
+
+    const accounts: Record<string, PublicKey> = {
+      sender: authorityKeypair.publicKey,
+      senderTokenAccount: senderPubkey,
+      receiverTokenAccount: receiverPubkey,
+      mint: mintPubkey,
+      senderAttestation: senderAttestationPda,
+      receiverAttestation: receiverAttestationPda,
+      receiverWallet: receiverPubkey,
+      compliancePolicy: policyPda,
+      transferRecord: transferRecordPda,
+      registry: registryPda,
+      tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      systemProgram: PublicKey.default,
+    };
+
+    const txSignature = await (program.methods as any)
+      .executeCompliantTransfer(
+        Array.from(nonceBuffer),
+        new BN(input.amount)
+      )
+      .accounts(accounts)
+      .rpc();
+
+    // Update transfer record with success
+    await db
+      .update(transfers)
+      .set({
+        txSignature,
+        status: 1, // completed
+        confirmedAt: new Date(),
+      })
+      .where(eq(transfers.id, transfer.id));
+
+    await logAuditEvent({
+      institutionId,
+      eventType: "transfer.confirmed",
+      entityType: "transfer",
+      entityId: transfer.id,
+      actor,
+      details: {
+        nonce,
+        txSignature,
+        amount: input.amount,
+        senderWallet: input.senderWallet,
+        receiverWallet: input.receiverWallet,
+      },
+    });
+
+    return { ...transfer, txSignature, status: 1, confirmedAt: new Date() };
+  } catch (txError) {
+    const errorMessage = txError instanceof Error ? txError.message : String(txError);
+
+    // Mark transfer as failed but do not crash the API
+    await db
+      .update(transfers)
+      .set({
+        status: 2, // failed
+        errorMessage,
+      })
+      .where(eq(transfers.id, transfer.id));
+
+    await logAuditEvent({
+      institutionId,
+      eventType: "transfer.failed",
+      entityType: "transfer",
+      entityId: transfer.id,
+      actor,
+      details: {
+        nonce,
+        error: errorMessage,
+        senderWallet: input.senderWallet,
+        receiverWallet: input.receiverWallet,
+        amount: input.amount,
+      },
+    });
+
+    console.error("On-chain transfer submission failed:", errorMessage);
+
+    return { ...transfer, status: 2, errorMessage };
+  }
 }
 
 export async function getTransfer(nonce: string) {

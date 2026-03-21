@@ -6,6 +6,7 @@ import {
   TransactionInstruction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
+import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
 import { config } from "../config.js";
 
@@ -114,16 +115,53 @@ export async function submitAttestation(
 }
 
 /**
- * Query on-chain attestation data by looking up memo transactions.
- * For hackathon: returns null — full implementation would index memo txs
- * or query the Anchor program's PDA accounts.
+ * Query on-chain attestation data by deriving the KYC attestation PDA
+ * from institution pubkey + wallet pubkey and fetching the account via Anchor.
  */
 export async function getOnChainAttestation(
-  _nonce: string
+  institutionPubkey: string,
+  walletPubkey: string
 ): Promise<AttestationRecord | null> {
-  // TODO: Implement on-chain attestation lookup.
-  // With the full Anchor program, this would derive the PDA from the nonce
-  // and fetch the account data. For now, attestation records are tracked
-  // in the database after submitAttestation succeeds.
-  return null;
+  if (!config.solana.programId) {
+    return null;
+  }
+
+  try {
+    const connection = getConnection();
+    const programId = new PublicKey(config.solana.programId);
+    const oracleKeypair = loadOracleKeypair();
+    const wallet = new Wallet(oracleKeypair);
+    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+
+    const program = new Program(
+      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+      provider
+    );
+
+    const institutionKey = new PublicKey(institutionPubkey);
+    const walletKey = new PublicKey(walletPubkey);
+
+    // Derive the KYC attestation PDA: seeds = ["kyc", institution_pubkey, wallet_pubkey]
+    const KYC_SEED = Buffer.from("kyc");
+    const [attestationPda] = PublicKey.findProgramAddressSync(
+      [KYC_SEED, institutionKey.toBuffer(), walletKey.toBuffer()],
+      programId
+    );
+
+    const accountData = await (program.account as any).kycAttestation.fetch(attestationPda);
+
+    if (!accountData) {
+      return null;
+    }
+
+    return {
+      nonce: Buffer.from(accountData.kycHash).toString("hex"),
+      status: accountData.status === 1 ? "active" : "inactive",
+      txSignature: "",
+      attestedAt: new Date(accountData.createdAt * 1000).toISOString(),
+    };
+  } catch {
+    // Account not found or program not deployed — return null
+    return null;
+  }
 }

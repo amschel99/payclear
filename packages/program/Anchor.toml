@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-payclear = "PCLRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+payclear = "FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6"
 
 [programs.devnet]
-payclear = "PCLRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+payclear = "FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6"
 
 [registry]
 url = "https://api.apr.dev"

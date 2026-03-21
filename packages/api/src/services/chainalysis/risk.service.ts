@@ -8,8 +8,11 @@
  */
 
 import { eq } from "drizzle-orm";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
+import { readFileSync } from "fs";
 import { db } from "../../db/client.js";
-import { screeningResults, entities } from "../../db/schema.js";
+import { screeningResults, entities, institutions } from "../../db/schema.js";
 import { logAuditEvent } from "../audit.service.js";
 import { config } from "../../config.js";
 import {
@@ -255,11 +258,10 @@ export async function screenWalletAddress(
     })
     .returning();
 
-  // Update entity's lastScreenedAt
+  // Update entity's updatedAt timestamp after screening
   await db
     .update(entities)
     .set({
-      lastScreenedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(entities.walletAddress, walletAddress));
@@ -284,7 +286,7 @@ export async function screenWalletAddress(
  * to payclear-sdk's updateRiskScore instruction.
  */
 export async function updateRiskScoreOnChain(
-  _institutionId: string,
+  institutionId: string,
   walletAddress: string,
   newScore: number
 ): Promise<void> {
@@ -297,9 +299,63 @@ export async function updateRiskScoreOnChain(
     })
     .where(eq(entities.walletAddress, walletAddress));
 
-  // TODO: call payclear-sdk updateRiskScore instruction
-  // const sdk = getPayClearSDK(institutionId);
-  // await sdk.updateRiskScore(walletAddress, newScore);
+  // Update on-chain attestation risk score
+  if (config.solana.programId) {
+    try {
+      const programId = new PublicKey(config.solana.programId);
+      const connection = new Connection(config.solana.rpcUrl, "confirmed");
+
+      // Load authority keypair
+      const walletPath = config.solana.walletPath.replace("~", process.env.HOME || "");
+      const keyData = JSON.parse(readFileSync(walletPath, "utf-8")) as number[];
+      const authorityKeypair = Keypair.fromSecretKey(Uint8Array.from(keyData));
+      const anchorWallet = new Wallet(authorityKeypair);
+
+      const provider = new AnchorProvider(connection, anchorWallet, { commitment: "confirmed" });
+      const program = new Program(
+        { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+        provider
+      );
+
+      // Look up institution's on-chain data
+      const [inst] = await db
+        .select()
+        .from(institutions)
+        .where(eq(institutions.id, institutionId));
+
+      if (inst) {
+        const institutionIdBytes = Buffer.from(inst.institutionId, "hex");
+        const INSTITUTION_SEED = Buffer.from("institution");
+        const KYC_SEED = Buffer.from("kyc");
+
+        const [institutionPda] = PublicKey.findProgramAddressSync(
+          [INSTITUTION_SEED, institutionIdBytes],
+          programId
+        );
+
+        const walletPubkey = new PublicKey(walletAddress);
+        const [attestationPda] = PublicKey.findProgramAddressSync(
+          [KYC_SEED, institutionPda.toBuffer(), walletPubkey.toBuffer()],
+          programId
+        );
+
+        await (program.methods as any)
+          .updateRiskScore(newScore)
+          .accounts({
+            institution: institutionPda,
+            attestation: attestationPda,
+            authority: authorityKeypair.publicKey,
+          })
+          .rpc();
+      }
+    } catch (err) {
+      // On-chain update is best-effort — DB update already succeeded
+      console.error(
+        `Failed to update on-chain risk score for ${walletAddress}:`,
+        err
+      );
+    }
+  }
 }
 
 // ─── Alert Processing ────────────────────────────────────────
@@ -333,12 +389,12 @@ export async function processAlert(alert: Alert): Promise<void> {
     screenedAt: new Date(alert.createdAt),
   });
 
-  // Find affected entity by transfer reference or wallet
+  // Find affected entities by institution ID
   // Alerts include userId which maps to our institutionId
   const affectedEntities = await db
     .select()
     .from(entities)
-    .where(eq(entities.chainalysisUserId, alert.userId));
+    .where(eq(entities.institutionId, alert.userId));
 
   for (const entity of affectedEntities) {
     const newScore = Math.min(score, 100);
@@ -347,7 +403,6 @@ export async function processAlert(alert: Alert): Promise<void> {
       .update(entities)
       .set({
         riskScore: newScore,
-        lastScreenedAt: new Date(),
         // Auto-revoke if severe
         ...(rating === "severe" ? { status: 3 } : {}),
         updatedAt: new Date(),

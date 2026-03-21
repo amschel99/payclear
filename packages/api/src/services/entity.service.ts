@@ -1,12 +1,27 @@
 import { eq, and } from "drizzle-orm";
-import { createHash } from "crypto";
 import { db } from "../db/client.js";
 import { entities } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
+import {
+  hashKycCanonicalHex,
+  HASH_VERSION,
+} from "../utils/canonical.js";
 import type { CreateEntityInput, UpdateEntityInput } from "../schemas/entity.schema.js";
 
+/**
+ * Compute a deterministic, versioned SHA-256 hash of KYC data.
+ *
+ * Uses RFC 8785 canonical JSON serialization so that key ordering is
+ * irrelevant — the same logical data always produces the same hash.
+ * The hash is versioned (currently v{@link HASH_VERSION}) so that
+ * future changes to the field set produce distinct digests rather than
+ * silently breaking verification of existing attestations.
+ *
+ * @param data - A record containing KYC fields (extra keys are ignored).
+ * @returns A 64-character lowercase hex-encoded SHA-256 digest.
+ */
 export function hashKycData(data: Record<string, unknown>): string {
-  return createHash("sha256").update(JSON.stringify(data)).digest("hex");
+  return hashKycCanonicalHex(data);
 }
 
 export async function createEntity(

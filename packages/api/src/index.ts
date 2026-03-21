@@ -13,6 +13,7 @@ import { webhookRoutes } from "./routes/webhooks.js";
 import { trustRoutes } from "./routes/trust.js";
 import { sumsubWebhookRoutes } from "./routes/sumsub-webhook.js";
 import { chainalysisRoutes } from "./routes/chainalysis.js";
+import { complianceRoutes } from "./routes/compliance.js";
 
 const app = Fastify({ logger: true });
 
@@ -49,7 +50,8 @@ async function start() {
     routePrefix: "/docs",
   });
 
-  // Routes
+  // Routes — compliance endpoints first (public /api/* routes)
+  await app.register(complianceRoutes);
   await app.register(institutionRoutes);
   await app.register(entityRoutes);
   await app.register(policyRoutes);

@@ -85,4 +85,8 @@ export const config = {
       process.env.CHAINALYSIS_AUTO_REVOKE_THRESHOLD || "85"
     ),
   },
+
+  oracle: {
+    privateKey: process.env.ORACLE_PRIVATE_KEY || "",
+  },
 } as const;

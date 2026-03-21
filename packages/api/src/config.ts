@@ -22,4 +22,13 @@ export const config = {
     signingSecret: process.env.WEBHOOK_SIGNING_SECRET || "dev-secret",
     maxRetries: 5,
   },
+
+  reclaim: {
+    appId: process.env.RECLAIM_APP_ID || "",
+    appSecret: process.env.RECLAIM_APP_SECRET || "",
+    trustedAttestors: (process.env.RECLAIM_TRUSTED_ATTESTORS || "")
+      .split(",")
+      .filter(Boolean),
+    proofTtlSeconds: parseInt(process.env.RECLAIM_PROOF_TTL || "86400"), // 24 hours
+  },
 } as const;

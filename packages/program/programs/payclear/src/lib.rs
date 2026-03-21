@@ -103,4 +103,30 @@ pub mod payclear {
     pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
         instructions::transfer_hook::handler_transfer_hook(ctx, amount)
     }
+
+    /// Record a verified ZK proof from Reclaim Protocol on-chain
+    pub fn record_zk_proof(
+        ctx: Context<RecordZkProof>,
+        proof_identifier: [u8; 32],
+        provider: [u8; 32],
+        kyc_level: u8,
+        verified_at: i64,
+        expires_at: i64,
+        attestor: Pubkey,
+    ) -> Result<()> {
+        instructions::record_zk_proof::handler(
+            ctx,
+            proof_identifier,
+            provider,
+            kyc_level,
+            verified_at,
+            expires_at,
+            attestor,
+        )
+    }
+
+    /// Create or update a KYC attestation based on a verified ZK proof record
+    pub fn verify_zk_attestation(ctx: Context<VerifyZkAttestation>) -> Result<()> {
+        instructions::verify_zk_attestation::handler(ctx)
+    }
 }

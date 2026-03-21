@@ -44,6 +44,18 @@ export const config = {
     maxRetries: 5,
   },
 
+  sumsub: {
+    appToken: process.env.SUMSUB_APP_TOKEN || "",
+    secretKey: process.env.SUMSUB_SECRET_KEY || "",
+    webhookSecret: process.env.SUMSUB_WEBHOOK_SECRET || "",
+    baseUrl: process.env.SUMSUB_BASE_URL || "https://api.sumsub.com",
+    defaultLevel: process.env.SUMSUB_DEFAULT_LEVEL || "basic-kyc-level",
+  },
+
+  sas: {
+    programId: process.env.SAS_PROGRAM_ID || "",
+  },
+
   encryption: {
     /** Hex-encoded 32-byte AES-256 master key for PII field encryption */
     masterKey: validateMasterKey(),

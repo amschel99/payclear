@@ -57,6 +57,11 @@ export const entities = pgTable(
     kycHash: text("kyc_hash"), // hex-encoded Merkle root (computed from plaintext PII before encryption)
     merkleLeaves: jsonb("merkle_leaves"), // { fieldName: hexLeafHash } for proof generation
     encryptionVersion: integer("encryption_version").notNull().default(1), // for future algorithm rotation
+    sumsubApplicantId: text("sumsub_applicant_id"),
+    sumsubReviewStatus: text("sumsub_review_status"),
+    sumsubVerificationLevel: text("sumsub_verification_level"),
+    sasAttestationAddress: text("sas_attestation_address"),
+    kycProvider: text("kyc_provider").default("self"), // 'self' | 'sumsub'
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

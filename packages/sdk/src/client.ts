@@ -144,9 +144,9 @@ export class PayClearClient {
 
   // Typed accessors to avoid TS2589 deep instantiation errors with Program<any>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private get methods(): any { return this.methods; }
+  private get methods(): any { return this.program.methods; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private get accounts(): any { return this.accounts; }
+  private get accounts(): any { return this.program.account; }
 
   constructor(config: PayClearClientConfig) {
     this.programId = config.programId;
@@ -638,7 +638,7 @@ export class PayClearClient {
     const providerBuffer = Buffer.alloc(32);
     Buffer.from(params.provider).copy(providerBuffer);
 
-    return this.program.methods
+    return this.methods
       .recordZkProof(
         Array.from(params.proofIdentifier),
         Array.from(providerBuffer),
@@ -688,7 +688,7 @@ export class PayClearClient {
     );
 
     try {
-      return await this.program.account.zkProofRecord.fetch(zkProofPda);
+      return await this.accounts.zkProofRecord.fetch(zkProofPda);
     } catch {
       return null;
     }
@@ -767,7 +767,7 @@ export class PayClearClient {
       this.programId
     );
 
-    return this.program.methods
+    return this.methods
       .initializeCivicExtraAccountMetaList()
       .accounts({
         extraAccountMetaList: extraAccountMetaListPda,

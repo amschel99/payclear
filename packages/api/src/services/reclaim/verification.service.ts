@@ -5,8 +5,8 @@ import type {
   PayClearKycClaim,
   VerificationResult,
   ProofRequest,
-} from "@payclear/sdk/src/utils/reclaim-types.js";
-import { ACCEPTED_KYC_PROVIDERS } from "@payclear/sdk/src/utils/reclaim-types.js";
+} from "@payclear/sdk";
+import { ACCEPTED_KYC_PROVIDERS } from "@payclear/sdk";
 
 /**
  * Service for verifying Reclaim Protocol zero-knowledge proofs off-chain.

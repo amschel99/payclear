@@ -5,7 +5,7 @@ import { deriveZkProofPDA } from "../accounts/pda.js";
 import { ACCEPTED_KYC_PROVIDERS } from "../utils/reclaim-types.js";
 
 describe("ZkProofRecord PDA derivation", () => {
-  const programId = new PublicKey("PCLRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+  const programId = new PublicKey("FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6");
   const institution = PublicKey.unique();
   const wallet = PublicKey.unique();
 

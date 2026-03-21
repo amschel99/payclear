@@ -31,6 +31,9 @@ export interface KycAttestation {
   expiresAt: bigint;
   createdAt: bigint;
   updatedAt: bigint;
+  /** If this attestation was accepted from another institution, this is the
+   *  original institution's pubkey. Pubkey.default() for first-party attestations. */
+  originalInstitution: PublicKey;
   bump: number;
 }
 
@@ -78,6 +81,18 @@ export interface TransferRecord {
   receiverRiskScore: number;
   status: number;
   timestamp: bigint;
+  bump: number;
+}
+
+export interface TrustNetwork {
+  /** The institution that owns this trust network */
+  institution: PublicKey;
+  /** List of institution pubkeys whose attestations are trusted */
+  trustedInstitutions: PublicKey[];
+  /** Minimum KYC level required from external attestations (0-3) */
+  minAcceptedKycLevel: number;
+  /** When true, only same-jurisdiction attestations can be accepted */
+  requireSameJurisdiction: boolean;
   bump: number;
 }
 

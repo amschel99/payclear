@@ -7,6 +7,7 @@ const POLICY_SEED = Buffer.from("policy");
 const TRAVEL_RULE_SEED = Buffer.from("travel_rule");
 const TRANSFER_SEED = Buffer.from("transfer");
 const EXTRA_ACCOUNT_META_LIST_SEED = Buffer.from("extra-account-metas");
+const TRUST_NETWORK_SEED = Buffer.from("trust_network");
 const CIVIC_GATEWAY_SEED = Buffer.from("gateway");
 
 export function deriveRegistryPDA(
@@ -73,6 +74,20 @@ export function deriveExtraAccountMetaListPDA(
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [EXTRA_ACCOUNT_META_LIST_SEED, mint.toBuffer()],
+    programId
+  );
+}
+
+/**
+ * Derives the TrustNetwork PDA for an institution.
+ * Seeds: ["trust_network", institution_pubkey]
+ */
+export function deriveTrustNetworkPDA(
+  institutionPda: PublicKey,
+  programId: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [TRUST_NETWORK_SEED, institutionPda.toBuffer()],
     programId
   );
 }

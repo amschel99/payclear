@@ -23,6 +23,17 @@ pub struct KycAttestation {
     pub created_at: i64,
     /// Last update timestamp
     pub updated_at: i64,
+    /// If this attestation was created by accepting an external attestation,
+    /// this field records the institution that originally performed the KYC.
+    /// `None` (Pubkey::default) means this is a first-party attestation.
+    ///
+    /// **Design note:** Once an attestation is accepted, it stands on its own.
+    /// If the original institution's attestation is later revoked, this accepted
+    /// attestation remains valid — the accepting institution has made its own
+    /// trust decision. Revocation of accepted attestations must be done
+    /// explicitly by the accepting institution. This prevents cascading failures
+    /// across trust networks in production payment flows.
+    pub original_institution: Pubkey,
     /// PDA bump
     pub bump: u8,
 }
@@ -38,5 +49,11 @@ impl KycAttestation {
 
     pub fn is_valid(&self, current_time: i64) -> bool {
         self.is_active() && !self.is_expired(current_time)
+    }
+
+    /// Returns true if this attestation was accepted from another institution
+    /// rather than created from a direct KYC verification.
+    pub fn is_accepted_from_external(&self) -> bool {
+        self.original_institution != Pubkey::default()
     }
 }

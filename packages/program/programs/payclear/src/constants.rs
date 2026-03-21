@@ -6,6 +6,7 @@ pub const POLICY_SEED: &[u8] = b"policy";
 pub const TRAVEL_RULE_SEED: &[u8] = b"travel_rule";
 pub const TRANSFER_SEED: &[u8] = b"transfer";
 pub const EXTRA_ACCOUNT_META_LIST_SEED: &[u8] = b"extra-account-metas";
+pub const TRUST_NETWORK_SEED: &[u8] = b"trust_network";
 
 /// KYC status values
 pub const KYC_STATUS_PENDING: u8 = 0;

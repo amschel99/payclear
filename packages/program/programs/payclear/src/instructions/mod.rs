@@ -8,6 +8,8 @@ pub mod record_travel_rule;
 pub mod approve_travel_rule;
 pub mod execute_compliant_transfer;
 pub mod transfer_hook;
+pub mod manage_trust_network;
+pub mod accept_external_attestation;
 pub mod civic_transfer_hook;
 pub mod initialize_civic_hook;
 
@@ -21,5 +23,7 @@ pub use record_travel_rule::*;
 pub use approve_travel_rule::*;
 pub use execute_compliant_transfer::*;
 pub use transfer_hook::*;
+pub use manage_trust_network::*;
+pub use accept_external_attestation::*;
 pub use civic_transfer_hook::*;
 pub use initialize_civic_hook::*;

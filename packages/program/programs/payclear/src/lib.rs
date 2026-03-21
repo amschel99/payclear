@@ -8,7 +8,7 @@ pub mod utils;
 
 use instructions::*;
 
-declare_id!("PCLRxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+declare_id!("FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6");
 
 #[program]
 pub mod payclear {
@@ -104,6 +104,50 @@ pub mod payclear {
     pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
         instructions::transfer_hook::handler_transfer_hook(ctx, amount)
     }
+
+    // ─── Trust Network & KYC Portability ─────────────────────
+
+    /// Add an institution to the caller's trust network.
+    /// This declares that the calling institution is willing to accept
+    /// KYC attestations issued by the trusted institution, subject to
+    /// the specified minimum KYC level and jurisdiction constraints.
+    pub fn add_trusted_institution(
+        ctx: Context<AddTrustedInstitution>,
+        min_accepted_kyc_level: u8,
+        require_same_jurisdiction: bool,
+    ) -> Result<()> {
+        instructions::manage_trust_network::handler_add_trusted_institution(
+            ctx,
+            min_accepted_kyc_level,
+            require_same_jurisdiction,
+        )
+    }
+
+    /// Remove an institution from the caller's trust network.
+    /// Note: This does NOT revoke any attestations that were previously
+    /// accepted based on trust in the removed institution. Those remain
+    /// valid until explicitly revoked — see module docs for rationale.
+    pub fn remove_trusted_institution(
+        ctx: Context<RemoveTrustedInstitution>,
+        trusted_institution: Pubkey,
+    ) -> Result<()> {
+        instructions::manage_trust_network::handler_remove_trusted_institution(
+            ctx,
+            trusted_institution,
+        )
+    }
+
+    /// Accept an external KYC attestation from a trusted institution.
+    /// Creates a new attestation under the accepting institution that
+    /// references the original, enabling cross-institution KYC portability
+    /// without re-sharing PII.
+    pub fn accept_external_attestation(
+        ctx: Context<AcceptExternalAttestation>,
+    ) -> Result<()> {
+        instructions::accept_external_attestation::handler(ctx)
+    }
+
+    // ─── Civic Gateway Integration ───────────────────────────
 
     /// Initialize extra account meta list for Civic-enhanced transfer hook (Mode B + Civic)
     pub fn initialize_civic_extra_account_meta_list(

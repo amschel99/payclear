@@ -52,9 +52,8 @@ export const entities = pgTable(
     addressCity: text("address_city"),
     addressCountry: char("address_country", { length: 2 }),
     onchainPubkey: text("onchain_pubkey"),
-    kycHash: text("kyc_hash"), // hex-encoded
-    chainalysisUserId: text("chainalysis_user_id"),
-    lastScreenedAt: timestamp("last_screened_at", { withTimezone: true }),
+    kycHash: text("kyc_hash"), // hex-encoded Merkle root
+    merkleLeaves: jsonb("merkle_leaves"), // { fieldName: hexLeafHash } for proof generation
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

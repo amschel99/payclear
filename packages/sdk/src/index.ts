@@ -28,6 +28,10 @@ export type {
   CompliancePolicy,
   TravelRuleRecord,
   TransferRecord,
+  SerializedMerkleProof,
+  SerializedMerkleProofItem,
+  SerializedProofSibling,
+  DisclosureProofResponse,
 } from "./accounts/types.js";
 
 export {
@@ -46,13 +50,37 @@ export {
   generateNonce,
 } from "./utils/hash.js";
 
-// Canonical serialization (RFC 8785)
+// Merkle tree for selective disclosure
 export {
-  canonicalize,
-  canonicalHash,
-  hashKycCanonical,
-  hashKycCanonicalHex,
-  serializeCanonical,
-  HASH_VERSION,
-  KYC_HASH_FIELDS_V1,
-} from "./utils/canonical.js";
+  buildKycMerkleTree,
+  getMerkleRoot,
+  generateProof,
+  verifyProof,
+  hashLeaf,
+} from "./utils/merkle.js";
+
+export type {
+  KycFieldMap,
+  MerkleTree,
+  MerkleNode,
+  MerkleProof,
+  MerkleProofItem,
+  ProofSibling,
+} from "./utils/merkle.js";
+
+// KYC field schema
+export {
+  KYC_FIELD_CATEGORY,
+  KYC_FIELD_DEFINITIONS,
+  VALID_KYC_FIELD_NAMES,
+  SORTED_KYC_FIELD_NAMES,
+  FIELD_CATEGORY_MAP,
+  PUBLIC_FIELD_NAMES,
+  PRIVATE_FIELD_NAMES,
+  validateFieldNames,
+} from "./utils/kyc-fields.js";
+
+export type {
+  KycFieldCategory,
+  KycFieldDefinition,
+} from "./utils/kyc-fields.js";

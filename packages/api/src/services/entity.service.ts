@@ -7,21 +7,59 @@ import {
   HASH_VERSION,
 } from "../utils/canonical.js";
 import type { CreateEntityInput, UpdateEntityInput } from "../schemas/entity.schema.js";
+import {
+  buildKycMerkleTree,
+  getMerkleRoot,
+  generateProof,
+  hashLeaf,
+  type KycFieldMap,
+} from "./merkle-bridge.js";
 
 /**
- * Compute a deterministic, versioned SHA-256 hash of KYC data.
+ * Collect the KYC field map from a CreateEntityInput.
  *
- * Uses RFC 8785 canonical JSON serialization so that key ordering is
- * irrelevant — the same logical data always produces the same hash.
- * The hash is versioned (currently v{@link HASH_VERSION}) so that
- * future changes to the field set produce distinct digests rather than
- * silently breaking verification of existing attestations.
- *
- * @param data - A record containing KYC fields (extra keys are ignored).
- * @returns A 64-character lowercase hex-encoded SHA-256 digest.
+ * Only fields that have a defined, non-empty value are included.  The field
+ * names must match the canonical KYC field schema so the Merkle tree is
+ * compatible with the SDK's verifier.
  */
-export function hashKycData(data: Record<string, unknown>): string {
-  return hashKycCanonicalHex(data);
+function buildKycFieldMap(
+  input: CreateEntityInput,
+  institutionId: string
+): KycFieldMap {
+  const fields: KycFieldMap = {};
+
+  // Public fields
+  fields.kycLevel = String(input.kycLevel);
+  if (input.addressCountry) fields.jurisdiction = input.addressCountry;
+  // entityType is not currently part of CreateEntityInput; include if provided
+  fields.attestingInstitution = institutionId;
+
+  // Private fields — only include if present
+  if (input.fullName) fields.fullName = input.fullName;
+  if (input.dateOfBirth) fields.dateOfBirth = input.dateOfBirth;
+  if (input.nationality) fields.nationality = input.nationality;
+  if (input.governmentIdType) fields.governmentIdType = input.governmentIdType;
+  if (input.governmentIdHash) fields.governmentIdHash = input.governmentIdHash;
+  if (input.addressLine1) fields.addressLine1 = input.addressLine1;
+  if (input.addressCity) fields.addressCity = input.addressCity;
+  if (input.addressCountry) fields.addressCountry = input.addressCountry;
+
+  return fields;
+}
+
+/**
+ * Build a map of { fieldName: hexLeafHash } for persistent storage.
+ *
+ * Stored alongside the entity so we can regenerate Merkle proofs without
+ * needing the raw PII values (though the raw values are also stored in the
+ * entity record for the institution's own use).
+ */
+function buildMerkleLeafMap(fields: KycFieldMap): Record<string, string> {
+  const leafMap: Record<string, string> = {};
+  for (const [name, value] of Object.entries(fields)) {
+    leafMap[name] = hashLeaf(name, value).toString("hex");
+  }
+  return leafMap;
 }
 
 export async function createEntity(
@@ -29,17 +67,11 @@ export async function createEntity(
   input: CreateEntityInput,
   actor: string
 ) {
-  const kycData = {
-    fullName: input.fullName,
-    dateOfBirth: input.dateOfBirth,
-    nationality: input.nationality,
-    governmentIdType: input.governmentIdType,
-    governmentIdHash: input.governmentIdHash,
-    addressLine1: input.addressLine1,
-    addressCity: input.addressCity,
-    addressCountry: input.addressCountry,
-  };
-  const kycHash = hashKycData(kycData);
+  // Build the Merkle tree from canonical KYC fields
+  const kycFields = buildKycFieldMap(input, institutionId);
+  const tree = buildKycMerkleTree(kycFields);
+  const kycHash = getMerkleRoot(tree).toString("hex");
+  const merkleLeaves = buildMerkleLeafMap(kycFields);
 
   const [entity] = await db
     .insert(entities)
@@ -58,6 +90,7 @@ export async function createEntity(
       addressCity: input.addressCity,
       addressCountry: input.addressCountry,
       kycHash,
+      merkleLeaves,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     })
     .returning();
@@ -116,4 +149,82 @@ export async function updateEntity(
   }
 
   return updated ?? null;
+}
+
+/**
+ * Generate a Merkle selective disclosure proof for an entity.
+ *
+ * Retrieves the entity, reconstructs the KYC field map from the stored
+ * data, builds the Merkle tree, and generates inclusion proofs for the
+ * requested field names.
+ *
+ * @param institutionId - The institution's UUID.
+ * @param walletAddress - The wallet address of the entity.
+ * @param fieldNames - The canonical field names to disclose.
+ * @returns The Merkle proof and disclosed field values, or null if the entity
+ *          is not found.
+ * @throws If any requested field is not present in the entity's Merkle tree.
+ */
+export async function generateDisclosureProof(
+  institutionId: string,
+  walletAddress: string,
+  fieldNames: string[]
+) {
+  const entity = await getEntity(institutionId, walletAddress);
+  if (!entity) return null;
+
+  // Reconstruct the KYC field map from stored entity data
+  const kycFields: KycFieldMap = {};
+
+  // Public fields
+  kycFields.kycLevel = String(entity.kycLevel);
+  if (entity.addressCountry) kycFields.jurisdiction = entity.addressCountry;
+  kycFields.attestingInstitution = entity.institutionId;
+
+  // Private fields
+  if (entity.fullName) kycFields.fullName = entity.fullName;
+  if (entity.dateOfBirth) kycFields.dateOfBirth = entity.dateOfBirth;
+  if (entity.nationality) kycFields.nationality = entity.nationality;
+  if (entity.governmentIdType) kycFields.governmentIdType = entity.governmentIdType;
+  if (entity.governmentIdHash) kycFields.governmentIdHash = entity.governmentIdHash;
+  if (entity.addressLine1) kycFields.addressLine1 = entity.addressLine1;
+  if (entity.addressCity) kycFields.addressCity = entity.addressCity;
+  if (entity.addressCountry) kycFields.addressCountry = entity.addressCountry;
+
+  // Build tree and generate proof
+  const tree = buildKycMerkleTree(kycFields);
+  const root = getMerkleRoot(tree);
+  const proof = generateProof(tree, fieldNames);
+
+  // Collect disclosed values
+  const disclosedFields: KycFieldMap = {};
+  for (const name of fieldNames) {
+    if (kycFields[name] === undefined) {
+      throw new Error(
+        `Field "${name}" is not present in this entity's KYC data.`
+      );
+    }
+    disclosedFields[name] = kycFields[name];
+  }
+
+  // Serialize proof for JSON transport
+  const serializedProof = {
+    root: root.toString("hex"),
+    items: proof.items.map((item) => ({
+      fieldName: item.fieldName,
+      fieldValue: item.fieldValue,
+      leafHash: item.leafHash.toString("hex"),
+      siblings: item.siblings.map((s) => ({
+        hash: s.hash.toString("hex"),
+        position: s.position,
+      })),
+    })),
+  };
+
+  return {
+    walletAddress: entity.walletAddress,
+    merkleRoot: root.toString("hex"),
+    disclosedFields,
+    proof: serializedProof,
+  };
 }

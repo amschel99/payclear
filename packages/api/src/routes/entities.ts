@@ -66,6 +66,48 @@ export async function entityRoutes(app: FastifyInstance) {
     return updated;
   });
 
+  // Generate selective disclosure proof
+  app.get<{
+    Params: { wallet: string };
+    Querystring: { fields: string };
+  }>("/v1/entities/:wallet/proof", async (request, reply) => {
+    const inst = request.institution!;
+    const { fields: fieldsParam } = request.query;
+
+    if (!fieldsParam || typeof fieldsParam !== "string") {
+      return reply.status(400).send({
+        error: "Missing required query parameter: fields (comma-separated list of KYC field names)",
+      });
+    }
+
+    const fieldNames = fieldsParam
+      .split(",")
+      .map((f) => f.trim())
+      .filter((f) => f.length > 0);
+
+    if (fieldNames.length === 0) {
+      return reply.status(400).send({
+        error: "At least one field name must be specified.",
+      });
+    }
+
+    try {
+      const result = await entityService.generateDisclosureProof(
+        inst.id,
+        request.params.wallet,
+        fieldNames
+      );
+
+      if (!result) {
+        return reply.status(404).send({ error: "Entity not found" });
+      }
+
+      return result;
+    } catch (err: any) {
+      return reply.status(400).send({ error: err.message });
+    }
+  });
+
   // Revoke entity attestation
   app.delete<{ Params: { wallet: string } }>("/v1/entities/:wallet", async (request, reply) => {
     const inst = request.institution!;

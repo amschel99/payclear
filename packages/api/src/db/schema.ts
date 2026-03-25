@@ -14,6 +14,7 @@ import {
   index,
   unique,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Institutions ────────────────────────────────────────────
 
@@ -154,12 +155,12 @@ export const compliancePolicies = pgTable(
     maxRiskScore: smallint("max_risk_score").notNull().default(70),
     travelRuleThreshold: bigint("travel_rule_threshold", { mode: "bigint" })
       .notNull()
-      .default(1000000000n), // 1000 USDC
+      .default(sql`1000000000`), // 1000 USDC
     requireBothAttested: boolean("require_both_attested").notNull().default(true),
     maxTransferAmount: bigint("max_transfer_amount", { mode: "bigint" })
       .notNull()
-      .default(0n),
-    dailyLimit: bigint("daily_limit", { mode: "bigint" }).notNull().default(0n),
+      .default(sql`0`),
+    dailyLimit: bigint("daily_limit", { mode: "bigint" }).notNull().default(sql`0`),
     allowedJurisdictions: text("allowed_jurisdictions").array(),
     blockedJurisdictions: text("blocked_jurisdictions").array(),
     active: boolean("active").notNull().default(true),

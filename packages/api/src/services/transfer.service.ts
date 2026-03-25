@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { randomBytes, createHash } from "crypto";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { AnchorProvider, Program, Wallet, BN } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
+import { getProgram } from "../utils/program.js";
 import { db } from "../db/client.js";
 import { transfers, travelRuleData, institutions } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";
@@ -184,22 +185,8 @@ export async function submitTransfer(
 
   // ─── Build and submit the on-chain transaction ──────────────
   try {
-    const programId = new PublicKey(config.solana.programId);
-    const connection = new Connection(config.solana.rpcUrl, "confirmed");
-
-    // Load authority keypair
-    const walletPath = config.solana.walletPath.replace("~", process.env.HOME || "");
-    const keyData = JSON.parse(readFileSync(walletPath, "utf-8")) as number[];
-    const authorityKeypair = Keypair.fromSecretKey(Uint8Array.from(keyData));
-    const wallet = new Wallet(authorityKeypair);
-
-    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
-
-    // Load the program (IDL placeholder — matches SDK approach)
-    const program = new Program(
-      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
-      provider
-    );
+    const { program, authority: authorityKeypair } = getProgram();
+    const programId = program.programId;
 
     // Derive PDAs
     const nonceBuffer = Buffer.from(nonce, "hex");

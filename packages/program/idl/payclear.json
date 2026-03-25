@@ -1,0 +1,894 @@
+{
+  "address": "71F2kpdL4ezapNYLGHFCxcBBLTfHyXqsA2BZ2YxKaR8e",
+  "metadata": {
+    "name": "payclear",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "initialize_registry",
+      "discriminator": [
+        189,
+        181,
+        20,
+        17,
+        174,
+        57,
+        249,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_institution",
+      "discriminator": [
+        77,
+        234,
+        193,
+        118,
+        107,
+        20,
+        106,
+        52
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true
+        },
+        {
+          "name": "institution",
+          "writable": true
+        },
+        {
+          "name": "institution_authority"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "institution_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "vasp_code",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "jurisdiction",
+          "type": {
+            "array": [
+              "u8",
+              2
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_kyc_attestation",
+      "discriminator": [
+        236,
+        205,
+        10,
+        211,
+        187,
+        8,
+        227,
+        112
+      ],
+      "accounts": [
+        {
+          "name": "registry"
+        },
+        {
+          "name": "institution",
+          "writable": true
+        },
+        {
+          "name": "wallet"
+        },
+        {
+          "name": "attestation",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "kyc_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "kyc_level",
+          "type": "u8"
+        },
+        {
+          "name": "risk_score",
+          "type": "u8"
+        },
+        {
+          "name": "expires_at",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "revoke_kyc_attestation",
+      "discriminator": [
+        243,
+        156,
+        196,
+        221,
+        134,
+        75,
+        48,
+        56
+      ],
+      "accounts": [
+        {
+          "name": "institution"
+        },
+        {
+          "name": "attestation",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_risk_score",
+      "discriminator": [
+        80,
+        138,
+        35,
+        224,
+        23,
+        172,
+        20,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "institution"
+        },
+        {
+          "name": "attestation",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_risk_score",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "set_compliance_policy",
+      "discriminator": [
+        148,
+        228,
+        78,
+        83,
+        178,
+        10,
+        243,
+        160
+      ],
+      "accounts": [
+        {
+          "name": "institution"
+        },
+        {
+          "name": "policy",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "PolicyParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "execute_compliant_transfer",
+      "discriminator": [
+        78,
+        78,
+        10,
+        86,
+        73,
+        107,
+        42,
+        161
+      ],
+      "accounts": [
+        {
+          "name": "sender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "sender_token_account",
+          "writable": true
+        },
+        {
+          "name": "receiver_token_account",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "sender_attestation"
+        },
+        {
+          "name": "receiver_attestation"
+        },
+        {
+          "name": "receiver_wallet"
+        },
+        {
+          "name": "compliance_policy"
+        },
+        {
+          "name": "travel_rule_record",
+          "optional": true
+        },
+        {
+          "name": "transfer_record",
+          "writable": true
+        },
+        {
+          "name": "registry",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Registry",
+      "discriminator": [
+        47,
+        174,
+        110,
+        246,
+        184,
+        182,
+        252,
+        218
+      ]
+    },
+    {
+      "name": "Institution",
+      "discriminator": [
+        178,
+        67,
+        44,
+        135,
+        26,
+        236,
+        199,
+        188
+      ]
+    },
+    {
+      "name": "KycAttestation",
+      "discriminator": [
+        114,
+        140,
+        31,
+        243,
+        17,
+        104,
+        193,
+        72
+      ]
+    },
+    {
+      "name": "CompliancePolicy",
+      "discriminator": [
+        145,
+        207,
+        177,
+        166,
+        247,
+        51,
+        145,
+        193
+      ]
+    },
+    {
+      "name": "TransferRecord",
+      "discriminator": [
+        200,
+        31,
+        6,
+        158,
+        240,
+        25,
+        248,
+        53
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "RegistryPaused",
+      "msg": "Registry is paused"
+    },
+    {
+      "code": 6001,
+      "name": "InstitutionInactive",
+      "msg": "Institution is not active"
+    },
+    {
+      "code": 6002,
+      "name": "UnauthorizedInstitution",
+      "msg": "Unauthorized: signer is not the institution authority"
+    },
+    {
+      "code": 6003,
+      "name": "UnauthorizedRegistry",
+      "msg": "Unauthorized: signer is not the registry authority"
+    },
+    {
+      "code": 6004,
+      "name": "AttestationNotActive",
+      "msg": "KYC attestation is not active"
+    },
+    {
+      "code": 6005,
+      "name": "AttestationExpired",
+      "msg": "KYC attestation has expired"
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientKycLevel",
+      "msg": "KYC level does not meet minimum requirement"
+    },
+    {
+      "code": 6007,
+      "name": "RiskScoreTooHigh",
+      "msg": "Risk score exceeds maximum allowed"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidRiskScore",
+      "msg": "Invalid risk score: must be 0-100"
+    },
+    {
+      "code": 6009,
+      "name": "TravelRuleRequired",
+      "msg": "Travel Rule record is required for this transfer amount"
+    },
+    {
+      "code": 6010,
+      "name": "TravelRuleNotApproved",
+      "msg": "Travel Rule record has not been approved"
+    },
+    {
+      "code": 6011,
+      "name": "TransferAmountExceeded",
+      "msg": "Transfer amount exceeds maximum allowed"
+    },
+    {
+      "code": 6012,
+      "name": "DailyLimitExceeded",
+      "msg": "Daily transfer limit exceeded"
+    },
+    {
+      "code": 6013,
+      "name": "SenderJurisdictionBlocked",
+      "msg": "Sender jurisdiction is blocked"
+    },
+    {
+      "code": 6014,
+      "name": "ReceiverJurisdictionBlocked",
+      "msg": "Receiver jurisdiction is blocked"
+    },
+    {
+      "code": 6015,
+      "name": "BothPartiesRequireAttestation",
+      "msg": "Both sender and receiver must have KYC attestations"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidStatusTransition",
+      "msg": "Invalid KYC status transition"
+    },
+    {
+      "code": 6017,
+      "name": "TravelRuleMismatch",
+      "msg": "Travel Rule record does not match transfer parameters"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidNonce",
+      "msg": "Invalid nonce: must be 32 bytes"
+    },
+    {
+      "code": 6019,
+      "name": "NonceAlreadyUsed",
+      "msg": "Transfer nonce already used"
+    },
+    {
+      "code": 6020,
+      "name": "PolicyInactive",
+      "msg": "Policy is not active"
+    },
+    {
+      "code": 6021,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "PolicyParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "policy_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "min_kyc_level",
+            "type": "u8"
+          },
+          {
+            "name": "max_risk_score",
+            "type": "u8"
+          },
+          {
+            "name": "travel_rule_threshold",
+            "type": "u64"
+          },
+          {
+            "name": "require_both_attested",
+            "type": "bool"
+          },
+          {
+            "name": "allowed_jurisdictions",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "blocked_jurisdictions",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "max_transfer_amount",
+            "type": "u64"
+          },
+          {
+            "name": "daily_limit",
+            "type": "u64"
+          },
+          {
+            "name": "require_civic_pass",
+            "type": "bool"
+          },
+          {
+            "name": "gatekeeper_network",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Registry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "institution_count",
+            "type": "u64"
+          },
+          {
+            "name": "attestation_count",
+            "type": "u64"
+          },
+          {
+            "name": "transfer_count",
+            "type": "u64"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Institution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "institution_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "vasp_code",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "jurisdiction",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "attestation_count",
+            "type": "u64"
+          },
+          {
+            "name": "default_policy",
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "KycAttestation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "institution",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "kyc_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "kyc_level",
+            "type": "u8"
+          },
+          {
+            "name": "risk_score",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "original_institution",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CompliancePolicy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "institution",
+            "type": "pubkey"
+          },
+          {
+            "name": "policy_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "min_kyc_level",
+            "type": "u8"
+          },
+          {
+            "name": "max_risk_score",
+            "type": "u8"
+          },
+          {
+            "name": "travel_rule_threshold",
+            "type": "u64"
+          },
+          {
+            "name": "require_both_attested",
+            "type": "bool"
+          },
+          {
+            "name": "allowed_jurisdictions",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "blocked_jurisdictions",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "max_transfer_amount",
+            "type": "u64"
+          },
+          {
+            "name": "daily_limit",
+            "type": "u64"
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "name": "require_civic_pass",
+            "type": "bool"
+          },
+          {
+            "name": "gatekeeper_network",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "nonce",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sender",
+            "type": "pubkey"
+          },
+          {
+            "name": "receiver",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "compliance_policy",
+            "type": "pubkey"
+          },
+          {
+            "name": "travel_rule_record",
+            "type": "pubkey"
+          },
+          {
+            "name": "sender_risk_score",
+            "type": "u8"
+          },
+          {
+            "name": "receiver_risk_score",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Copy,
   Check,
+  RotateCcw,
 } from "lucide-react";
 import { verifyKyc, scoreKyt, packageTravelRule, attestOracle } from "@/lib/api";
 import { explorerUrl } from "@/lib/constants";
@@ -150,9 +151,11 @@ export default function SendPage() {
   const { publicKey, connected } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [txCopied, setTxCopied] = useState(false);
 
   // Step 2 state
   const [receiverWallet, setReceiverWallet] = useState("");
+  const [walletError, setWalletError] = useState("");
   const [amount, setAmount] = useState("");
   const [receiverName, setReceiverName] = useState("");
 
@@ -213,9 +216,17 @@ export default function SendPage() {
     setTimeout(() => setCopied(false), 2000);
   }, [walletAddress]);
 
+  const isValidSolanaAddress = (addr: string) =>
+    /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiverWallet || !amount || !receiverName) return;
+    if (!isValidSolanaAddress(receiverWallet)) {
+      setWalletError("Invalid Solana address — must be base58, 32–44 characters.");
+      return;
+    }
+    setWalletError("");
     setCurrentStep(3);
   };
 
@@ -437,14 +448,20 @@ export default function SendPage() {
                   <label className="label">Recipient Wallet Address</label>
                   <input
                     type="text"
-                    className="input font-mono text-sm"
+                    className={`input font-mono text-sm ${walletError ? "border-red-400 focus:ring-red-300" : ""}`}
                     placeholder="Enter Solana wallet address"
                     value={receiverWallet}
-                    onChange={(e) => setReceiverWallet(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setReceiverWallet(e.target.value);
+                      if (walletError) setWalletError("");
+                    }}
                     required
                     minLength={32}
                     maxLength={44}
                   />
+                  {walletError && (
+                    <p className="text-xs text-red-600 mt-1">{walletError}</p>
+                  )}
                 </div>
 
                 <div>
@@ -661,9 +678,23 @@ export default function SendPage() {
                     </div>
                   </div>
                   <div className="p-3 rounded-lg bg-white border border-emerald-100">
-                    <p className="text-xs text-gray-500 mb-1">
-                      Transaction Signature
-                    </p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs text-gray-500">Transaction Signature</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(txSignature);
+                          setTxCopied(true);
+                          setTimeout(() => setTxCopied(false), 2000);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        {txCopied ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                     <p className="text-sm font-mono text-gray-900 break-all">
                       {txSignature}
                     </p>
@@ -683,13 +714,28 @@ export default function SendPage() {
               {/* Actions */}
               <div className="flex gap-3">
                 {!complianceRunning && !txSignature && settlementError && (
-                  <button
-                    onClick={runCompliance}
-                    className="btn-primary flex-1"
-                  >
-                    Retry Compliance Check
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      onClick={runCompliance}
+                      className="btn-primary flex-1"
+                    >
+                      Retry Compliance Check
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentStep(2);
+                        setSettlementError("");
+                        setComplianceSteps((prev: ComplianceStep[]) =>
+                          prev.map((s: ComplianceStep) => ({ ...s, status: "pending" as const, detail: undefined }))
+                        );
+                      }}
+                      className="btn-secondary"
+                      title="Edit payment details"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
                 {txSignature && (
                   <button

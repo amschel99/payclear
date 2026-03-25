@@ -8,7 +8,7 @@ pub mod utils;
 
 use instructions::*;
 
-declare_id!("FaXpdjMgUjuCthPFTUn3yrWrKWtWWWhpbPaDT2ZVk5R6");
+declare_id!("71F2kpdL4ezapNYLGHFCxcBBLTfHyXqsA2BZ2YxKaR8e");
 
 #[program]
 pub mod payclear {

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { randomBytes, createHash } from "crypto";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { db } from "../db/client.js";
 import { institutions } from "../db/schema.js";
 import { logAuditEvent } from "./audit.service.js";

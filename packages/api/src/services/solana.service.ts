@@ -6,8 +6,9 @@ import {
   TransactionInstruction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
+import { getProgram } from "../utils/program.js";
 import { config } from "../config.js";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -127,16 +128,8 @@ export async function getOnChainAttestation(
   }
 
   try {
-    const connection = getConnection();
-    const programId = new PublicKey(config.solana.programId);
-    const oracleKeypair = loadOracleKeypair();
-    const wallet = new Wallet(oracleKeypair);
-    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
-
-    const program = new Program(
-      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
-      provider
-    );
+    const { program } = getProgram();
+    const programId = program.programId;
 
     const institutionKey = new PublicKey(institutionPubkey);
     const walletKey = new PublicKey(walletPubkey);

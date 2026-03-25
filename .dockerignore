@@ -1,0 +1,13 @@
+node_modules
+dist
+target
+.anchor
+.turbo
+.next
+.git
+.claude
+*.so
+test-ledger
+packages/web
+packages/program/target
+packages/program/tests

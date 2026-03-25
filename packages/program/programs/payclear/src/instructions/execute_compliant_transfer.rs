@@ -18,31 +18,31 @@ pub struct ExecuteCompliantTransfer<'info> {
         token::mint = mint,
         token::authority = sender,
     )]
-    pub sender_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub sender_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// Receiver's token account
     #[account(
         mut,
         token::mint = mint,
     )]
-    pub receiver_token_account: InterfaceAccount<'info, TokenAccount>,
+    pub receiver_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// Token mint
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// Sender's KYC attestation
     #[account(
         seeds = [KYC_SEED, sender_attestation.institution.as_ref(), sender.key().as_ref()],
         bump = sender_attestation.bump,
     )]
-    pub sender_attestation: Account<'info, KycAttestation>,
+    pub sender_attestation: Box<Account<'info, KycAttestation>>,
 
     /// Receiver's KYC attestation
     #[account(
         seeds = [KYC_SEED, receiver_attestation.institution.as_ref(), receiver_wallet.key().as_ref()],
         bump = receiver_attestation.bump,
     )]
-    pub receiver_attestation: Account<'info, KycAttestation>,
+    pub receiver_attestation: Box<Account<'info, KycAttestation>>,
 
     /// The receiver's wallet (for PDA derivation)
     /// CHECK: Used only for attestation PDA derivation
@@ -54,11 +54,11 @@ pub struct ExecuteCompliantTransfer<'info> {
         bump = compliance_policy.bump,
         constraint = compliance_policy.active @ PayClearError::PolicyInactive,
     )]
-    pub compliance_policy: Account<'info, CompliancePolicy>,
+    pub compliance_policy: Box<Account<'info, CompliancePolicy>>,
 
     /// Travel Rule record (optional — required if amount >= threshold)
     /// CHECK: Validated in handler if travel rule is required
-    pub travel_rule_record: Option<Account<'info, TravelRuleRecord>>,
+    pub travel_rule_record: Option<Box<Account<'info, TravelRuleRecord>>>,
 
     /// Transfer record PDA to create
     #[account(
@@ -68,7 +68,7 @@ pub struct ExecuteCompliantTransfer<'info> {
         seeds = [TRANSFER_SEED, nonce.as_ref()],
         bump,
     )]
-    pub transfer_record: Account<'info, TransferRecord>,
+    pub transfer_record: Box<Account<'info, TransferRecord>>,
 
     /// Registry for global state
     #[account(
@@ -77,7 +77,7 @@ pub struct ExecuteCompliantTransfer<'info> {
         bump = registry.bump,
         constraint = !registry.paused @ PayClearError::RegistryPaused,
     )]
-    pub registry: Account<'info, Registry>,
+    pub registry: Box<Account<'info, Registry>>,
 
     /// Token program (SPL Token or Token-2022)
     pub token_program: Interface<'info, TokenInterface>,

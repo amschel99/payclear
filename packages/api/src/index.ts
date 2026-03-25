@@ -15,10 +15,18 @@ import { sumsubWebhookRoutes } from "./routes/sumsub-webhook.js";
 import { chainalysisRoutes } from "./routes/chainalysis.js";
 import { complianceRoutes } from "./routes/compliance.js";
 import { reclaimRoutes } from "./routes/reclaim.js";
+import { keyManager } from "./utils/key-manager.js";
+
+// Serialize BigInt values as strings so JSON.stringify does not throw
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
 
 const app = Fastify({ logger: true });
 
 async function start() {
+  // Initialize key manager before handling any requests
+  keyManager.initialize();
   // Plugins
   await app.register(cors, { origin: true });
   await app.register(rateLimit, {

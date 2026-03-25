@@ -1,0 +1,8 @@
+# Local dev override — removes host-port bindings for ports already in use by
+# other containers (Redis 6379, Postgres 5432). All payclear services
+# communicate via the internal Docker network so no host bindings are needed.
+services:
+  redis:
+    ports: !reset []
+  postgres:
+    ports: !reset []

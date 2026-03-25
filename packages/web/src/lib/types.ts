@@ -70,6 +70,28 @@ export interface Transfer {
   transferNonce: string;
 }
 
+// Shape returned by GET /v1/transfers
+export interface ApiTransfer {
+  id: string;
+  nonce: string;
+  institutionId: string;
+  senderWallet: string;
+  receiverWallet: string;
+  mint: string;
+  amount: string; // BigInt serialised as string; USDC = divide by 1_000_000
+  status: number; // 0=pending, 1=completed, 2=failed
+  txSignature: string | null;
+  compliancePolicyId: string | null;
+  senderRiskScore: number | null;
+  receiverRiskScore: number | null;
+  travelRuleId: string | null;
+  screeningStatus: string | null; // 'pending'|'cleared'|'flagged'|'blocked'
+  screeningId: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  confirmedAt: string | null;
+}
+
 export type ComplianceStepStatus = "pending" | "running" | "passed" | "failed";
 
 export interface ComplianceStep {

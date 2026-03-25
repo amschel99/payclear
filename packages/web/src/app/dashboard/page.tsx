@@ -11,12 +11,15 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   KeyRound,
   RefreshCw,
   AlertCircle,
   Search,
   X,
+  Download,
 } from "lucide-react";
 import { explorerUrl } from "@/lib/constants";
 import { listTransfers, getApiKey, saveApiKey } from "@/lib/api";
@@ -28,6 +31,8 @@ type DateRange = "all" | "today" | "7d" | "30d";
 type StatusFilter = "all" | Transfer["settlementStatus"];
 type SortCol = "date" | "amount" | "kytScore";
 type SortDir = "asc" | "desc";
+
+const PAGE_SIZE = 25;
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -179,6 +184,7 @@ export default function DashboardPage() {
 
   // Table UI state
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   // ── Fetch ────────────────────────────────────────────────────
 
@@ -270,6 +276,12 @@ export default function DashboardPage() {
     return result;
   }, [transfers, dateRange, search, statusFilter, sortCol, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredTransfers.length / PAGE_SIZE));
+  const paginatedTransfers = filteredTransfers.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
   const hasActiveFilters =
     dateRange !== "all" || search.trim() !== "" || statusFilter !== "all";
 
@@ -277,6 +289,50 @@ export default function DashboardPage() {
     setDateRange("all");
     setSearch("");
     setStatusFilter("all");
+    setPage(1);
+  };
+
+  // Reset to page 1 whenever a filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, dateRange, statusFilter]);
+
+  // ── CSV export ───────────────────────────────────────────────
+
+  const exportCsv = () => {
+    const headers = [
+      "Date",
+      "Sender Wallet",
+      "Receiver Wallet",
+      "Amount (USDC)",
+      "KYT Score",
+      "KYT Passed",
+      "Travel Rule Hash",
+      "Status",
+      "TX Signature",
+    ];
+    const rows = filteredTransfers.map((t: Transfer) => [
+      new Date(t.date).toISOString(),
+      t.senderWallet,
+      t.receiverWallet,
+      t.amount.toFixed(6),
+      t.kytScore,
+      t.kytPassed ? "Yes" : "No",
+      t.travelRuleHash,
+      t.settlementStatus,
+      t.txSignature ?? "",
+    ]);
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell: string | number) => escape(String(cell))).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payclear-transfers-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // ── Stats — computed from filtered view ──────────────────────
@@ -507,6 +563,17 @@ export default function DashboardPage() {
               </button>
             )}
 
+            {/* Export CSV */}
+            {filteredTransfers.length > 0 && (
+              <button
+                onClick={exportCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            )}
+
             {/* Record count */}
             <span className="text-xs text-gray-400 ml-auto whitespace-nowrap">
               {filteredTransfers.length}
@@ -614,7 +681,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filteredTransfers.map((tx: Transfer) => {
+                  {paginatedTransfers.map((tx: Transfer) => {
                     const isExpanded = expandedRow === tx.id;
                     return (
                       <React.Fragment key={tx.id}>
@@ -740,6 +807,62 @@ export default function DashboardPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                Page {page} of {totalPages} &mdash;{" "}
+                {filteredTransfers.length} records
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p: number) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (n) => n === 1 || n === totalPages || Math.abs(n - page) <= 1
+                  )
+                  .reduce<(number | "…")[]>((acc, n, idx, arr) => {
+                    if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push("…");
+                    acc.push(n);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === "…" ? (
+                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-gray-400">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setPage(item as number)}
+                        className={`min-w-[28px] h-7 rounded-lg text-xs font-medium transition-colors ${
+                          page === item
+                            ? "bg-primary-600 text-white"
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

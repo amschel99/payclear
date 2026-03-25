@@ -92,6 +92,19 @@ export interface ApiTransfer {
   confirmedAt: string | null;
 }
 
+// Shape returned by GET /v1/audit/transfers
+export interface ApiAuditEvent {
+  id: string;
+  institutionId: string | null;
+  eventType: string;
+  entityType: string;
+  entityId: string | null;
+  actor: string;
+  details: Record<string, unknown> | null;
+  txSignature: string | null;
+  createdAt: string;
+}
+
 export type ComplianceStepStatus = "pending" | "running" | "passed" | "failed";
 
 export interface ComplianceStep {

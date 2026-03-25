@@ -20,6 +20,7 @@ import {
   Search,
   X,
   Download,
+  Timer,
 } from "lucide-react";
 import { explorerUrl } from "@/lib/constants";
 import { listTransfers, getApiKey, saveApiKey } from "@/lib/api";
@@ -186,6 +187,11 @@ export default function DashboardPage() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Auto-refresh state
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState(30);
+
   // ── Fetch ────────────────────────────────────────────────────
 
   const fetchTransfers = useCallback(async () => {
@@ -194,6 +200,8 @@ export default function DashboardPage() {
     try {
       const data = await listTransfers(50, 0);
       setTransfers(data.map(mapApiTransfer));
+      setLastUpdated(new Date());
+      setCountdown(30);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to load transfers";
@@ -210,6 +218,23 @@ export default function DashboardPage() {
   useEffect(() => {
     if (hasKey) fetchTransfers();
   }, [hasKey, fetchTransfers]);
+
+  // Auto-refresh: fetch every 30 s when toggled on
+  useEffect(() => {
+    if (!autoRefresh || !hasKey) return;
+    const interval = setInterval(fetchTransfers, 30_000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, hasKey, fetchTransfers]);
+
+  // Countdown ticker (1 s) while auto-refresh is active
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const tick = setInterval(
+      () => setCountdown((c: number) => (c > 0 ? c - 1 : 0)),
+      1_000
+    );
+    return () => clearInterval(tick);
+  }, [autoRefresh]);
 
   const handleSaveKey = () => {
     if (!apiKeyInput.trim()) return;
@@ -417,16 +442,37 @@ export default function DashboardPage() {
             </p>
           </div>
           {hasKey && (
-            <button
-              onClick={fetchTransfers}
-              disabled={loading}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              {lastUpdated && (
+                <span className="hidden sm:block text-xs text-gray-400">
+                  {autoRefresh
+                    ? `Refreshing in ${countdown}s`
+                    : `Updated ${lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setAutoRefresh((v: boolean) => !v);
+                  if (!autoRefresh) setCountdown(30);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  autoRefresh
+                    ? "bg-primary-50 text-primary-700 border border-primary-200"
+                    : "text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                <Timer className={`w-4 h-4 ${autoRefresh && countdown <= 5 ? "animate-pulse" : ""}`} />
+                {autoRefresh ? "Live" : "Auto"}
+              </button>
+              <button
+                onClick={fetchTransfers}
+                disabled={loading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
           )}
         </div>
 

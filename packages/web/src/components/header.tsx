@@ -3,12 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Send, LayoutDashboard, Settings } from "lucide-react";
+import { Shield, Send, LayoutDashboard, Settings, ScrollText } from "lucide-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 const navigation = [
   { name: "Send", href: "/", icon: Send },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Audit", href: "/audit", icon: ScrollText },
   { name: "Admin", href: "/admin", icon: Settings },
 ];
 

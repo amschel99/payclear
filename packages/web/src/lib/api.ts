@@ -1,6 +1,7 @@
 import axios, { AxiosError } from "axios";
 import type {
   ApiTransfer,
+  ApiAuditEvent,
   KycVerifyRequest,
   KycVerifyResponse,
   KytScoreRequest,
@@ -119,6 +120,23 @@ export async function checkHealth(): Promise<{
 }> {
   try {
     const response = await client.get("/health");
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function listAuditEvents(
+  limit = 50,
+  offset = 0
+): Promise<ApiAuditEvent[]> {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new ApiError("No API key configured", 401);
+  try {
+    const response = await client.get<ApiAuditEvent[]>("/v1/audit/transfers", {
+      params: { limit, offset },
+      headers: { "X-API-Key": apiKey },
+    });
     return response.data;
   } catch (error) {
     handleError(error);

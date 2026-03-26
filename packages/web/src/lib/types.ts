@@ -7,8 +7,10 @@ export interface KycVerifyRequest {
 
 export interface KycVerifyResponse {
   verified: boolean;
+  status: "verified" | "pending" | "rejected";
   kycLevel: number;
   expiresAt: string;
+  applicantId: string;
 }
 
 export interface KytScoreRequest {

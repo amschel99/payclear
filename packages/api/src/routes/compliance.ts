@@ -186,7 +186,7 @@ export async function complianceRoutes(app: FastifyInstance) {
         eventType: "kyc.verified",
         entityType: "entity",
         actor: "public-api",
-        details: { walletAddress: body.walletAddress, verified: result.verified, kycLevel: result.kycLevel },
+        details: { walletAddress: body.wallet, verified: result.verified, kycLevel: result.kycLevel },
       });
       return reply.send(result);
     } catch (err) {
@@ -209,7 +209,7 @@ export async function complianceRoutes(app: FastifyInstance) {
         eventType: "kyt.scored",
         entityType: "transfer",
         actor: "public-api",
-        details: { walletAddress: body.walletAddress, score: result.score, passed: result.passed },
+        details: { senderWallet: body.senderWallet, receiverWallet: body.receiverWallet, score: result.score, passed: result.passed },
       });
       // Flatten factors into string array for frontend consumption
       return reply.send({

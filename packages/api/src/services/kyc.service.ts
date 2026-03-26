@@ -7,6 +7,7 @@ import type { KycVerifyInput } from "../schemas/compliance.schema.js";
 
 export interface KycVerifyResult {
   verified: boolean;
+  status: "verified" | "pending" | "rejected";
   kycLevel: number;
   expiresAt: string;
   applicantId: string;
@@ -60,12 +61,13 @@ async function verifySumsubReal(input: KycVerifyInput) {
   // Step 2: Get the applicant review status
   const status = await client.getApplicant(applicant.id);
 
-  const reviewAnswer = status.review?.reviewAnswer ?? "RED";
+  // If no review exists yet, Sumsub hasn't finished — treat as pending
+  const reviewAnswer = status.review?.reviewAnswer ?? null;
   const riskLabels = status.review?.rejectLabels ?? [];
 
   return {
     applicantId: applicant.id,
-    reviewAnswer: reviewAnswer as "GREEN" | "RED",
+    reviewAnswer,
     riskLabels,
   };
 }
@@ -103,6 +105,8 @@ export async function verifyKyc(input: KycVerifyInput): Promise<KycVerifyResult>
     : await verifySumsubMock(input.wallet);
 
   const verified = result.reviewAnswer === "GREEN";
+  const rejected = result.reviewAnswer === "RED";
+  const status = verified ? "verified" as const : rejected ? "rejected" as const : "pending" as const;
   const kycLevel = verified ? determineKycLevel(input) : 0;
 
   const expiresAt = new Date();
@@ -110,6 +114,7 @@ export async function verifyKyc(input: KycVerifyInput): Promise<KycVerifyResult>
 
   return {
     verified,
+    status,
     kycLevel,
     expiresAt: expiresAt.toISOString(),
     applicantId: result.applicantId,

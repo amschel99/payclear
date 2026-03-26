@@ -1,4 +1,4 @@
-import { Queue, Worker } from "bullmq";
+import { Queue, Worker, type ConnectionOptions } from "bullmq";
 import IORedis from "ioredis";
 import { createHmac } from "node:crypto";
 import { eq, and } from "drizzle-orm";
@@ -10,7 +10,7 @@ const QUEUE_NAME = "webhook-delivery";
 
 const connection = new IORedis(config.redis.url, {
   maxRetriesPerRequest: null, // required by BullMQ
-});
+}) as unknown as ConnectionOptions;
 
 const webhookQueue = new Queue(QUEUE_NAME, { connection });
 

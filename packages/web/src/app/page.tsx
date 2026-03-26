@@ -166,6 +166,7 @@ export default function SendPage() {
   const [kycLoading, setKycLoading] = useState(false);
   const [kycResult, setKycResult] = useState<{
     verified: boolean;
+    status: "verified" | "pending" | "rejected";
     kycLevel: number;
   } | null>(null);
   const [kycError, setKycError] = useState("");
@@ -242,9 +243,11 @@ export default function SendPage() {
         dateOfBirth,
         nationality,
       });
-      setKycResult({ verified: result.verified, kycLevel: result.kycLevel });
+      setKycResult({ verified: result.verified, status: result.status, kycLevel: result.kycLevel });
       if (result.verified) {
         setTimeout(() => setCurrentStep(4), 800);
+      } else if (result.status === "pending") {
+        setKycError("Verification is being processed by Sumsub. You'll be notified when it's complete.");
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "KYC verification failed";
@@ -519,6 +522,29 @@ export default function SendPage() {
                     KYC Level {kycResult.kycLevel} — Proceeding to compliance
                     checks...
                   </p>
+                </div>
+              ) : kycResult?.status === "pending" ? (
+                <div className="text-center py-8 animate-fade-in">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Verification In Progress
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Sumsub is reviewing your identity. This usually takes a few minutes.
+                    You&apos;ll be able to proceed once verification is complete.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-4 btn-secondary inline-flex items-center gap-2"
+                    onClick={() => { setKycResult(null); setKycError(""); }}
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Try Again
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleKycSubmit} className="space-y-5">

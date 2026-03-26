@@ -9,6 +9,7 @@ import {
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
 import { config } from "../config.js";
+import { payclearIdl } from "@payclear/sdk";
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -134,7 +135,7 @@ export async function getOnChainAttestation(
     const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
 
     const program = new Program(
-      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+      payclearIdl as any,
       provider
     );
 

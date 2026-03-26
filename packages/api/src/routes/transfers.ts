@@ -40,8 +40,8 @@ export async function transferRoutes(app: FastifyInstance) {
     "/v1/transfers",
     async (request) => {
       const inst = request.institution!;
-      const limit = parseInt(request.query.limit || "50", 10);
-      const offset = parseInt(request.query.offset || "0", 10);
+      const limit = Math.min(Math.max(parseInt(request.query.limit || "50", 10) || 50, 1), 200);
+      const offset = Math.max(parseInt(request.query.offset || "0", 10) || 0, 0);
       return transferService.listTransfers(inst.id, limit, offset);
     }
   );

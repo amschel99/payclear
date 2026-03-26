@@ -26,6 +26,7 @@ export const institutions = pgTable("institutions", {
   onchainPubkey: text("onchain_pubkey").notNull().unique(),
   authorityPubkey: text("authority_pubkey").notNull(),
   apiKeyHash: text("api_key_hash").notNull(),
+  apiKeyPrefix: text("api_key_prefix"),
   encryptedDek: text("encrypted_dek"), // AES-256-GCM wrapped DEK (base64), encrypted by master key
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

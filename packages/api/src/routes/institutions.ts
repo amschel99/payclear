@@ -1,10 +1,14 @@
 import { FastifyInstance } from "fastify";
 import { createInstitutionSchema, updateInstitutionSchema } from "../schemas/institution.schema.js";
 import * as institutionService from "../services/institution.service.js";
+import { adminAuthMiddleware } from "../middleware/admin-auth.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 export async function institutionRoutes(app: FastifyInstance) {
   // Create institution (registry admin only)
-  app.post("/v1/institutions", async (request, reply) => {
+  app.post("/v1/institutions", {
+    onRequest: adminAuthMiddleware,
+  }, async (request, reply) => {
     const body = createInstitutionSchema.parse(request.body);
 
     const { institution, apiKey } = await institutionService.createInstitution(
@@ -25,8 +29,10 @@ export async function institutionRoutes(app: FastifyInstance) {
     });
   });
 
-  // Get institution
-  app.get<{ Params: { id: string } }>("/v1/institutions/:id", async (request, reply) => {
+  // Get institution (requires institution API key auth)
+  app.get<{ Params: { id: string } }>("/v1/institutions/:id", {
+    onRequest: authMiddleware,
+  }, async (request, reply) => {
     const institution = await institutionService.getInstitution(request.params.id);
     if (!institution) {
       return reply.status(404).send({ error: "Institution not found" });
@@ -41,8 +47,10 @@ export async function institutionRoutes(app: FastifyInstance) {
     };
   });
 
-  // Update institution
-  app.patch<{ Params: { id: string } }>("/v1/institutions/:id", async (request, reply) => {
+  // Update institution (requires institution API key auth)
+  app.patch<{ Params: { id: string } }>("/v1/institutions/:id", {
+    onRequest: authMiddleware,
+  }, async (request, reply) => {
     const body = updateInstitutionSchema.parse(request.body);
     const updated = await institutionService.updateInstitution(request.params.id, body);
     if (!updated) {

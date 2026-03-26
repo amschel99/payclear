@@ -1,5 +1,17 @@
 import { db } from "../db/client.js";
 import { auditLog } from "../db/schema.js";
+import { dispatchWebhookEvent } from "./webhook.service.js";
+
+/** Event types that should trigger webhook dispatch */
+const WEBHOOK_EVENT_TYPES = new Set([
+  "transfer.submitted",
+  "transfer.completed",
+  "transfer.failed",
+  "transfer.blocked",
+  "institution.created",
+  "travel_rule.created",
+  "travel_rule.approved",
+]);
 
 export type AuditEventType =
   | "institution.created"
@@ -48,4 +60,20 @@ export async function logAuditEvent(params: {
     details: params.details,
     txSignature: params.txSignature,
   });
+
+  // Dispatch webhook for key compliance events
+  if (WEBHOOK_EVENT_TYPES.has(params.eventType)) {
+    dispatchWebhookEvent(params.institutionId, params.eventType, {
+      eventType: params.eventType,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      actor: params.actor,
+      details: params.details,
+      txSignature: params.txSignature,
+      timestamp: new Date().toISOString(),
+    }).catch((err) => {
+      // Log but don't fail the audit event if webhook dispatch fails
+      console.error("Failed to dispatch webhook event:", err);
+    });
+  }
 }

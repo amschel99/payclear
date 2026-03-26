@@ -21,6 +21,7 @@ import {
   type Exposure,
   type Alert,
 } from "./client.js";
+import { payclearIdl } from "@payclear/sdk";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -313,7 +314,7 @@ export async function updateRiskScoreOnChain(
 
       const provider = new AnchorProvider(connection, anchorWallet, { commitment: "confirmed" });
       const program = new Program(
-        { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+        payclearIdl as any,
         provider
       );
 

@@ -177,14 +177,22 @@ async function attestCompliance(input: OracleAttestInput) {
 
 export async function complianceRoutes(app: FastifyInstance) {
   // POST /api/kyc/verify — KYC verification (mock Sumsub)
-  app.post("/api/kyc/verify", async (request, reply) => {
+  app.post("/api/kyc/verify", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request, reply) => {
     try {
       const body = kycVerifySchema.parse(request.body);
       const result = await kycService.verifyKyc(body);
+      await logAuditEvent({
+        institutionId: "00000000-0000-0000-0000-000000000000", // public API
+        eventType: "kyc.verified",
+        entityType: "entity",
+        actor: "public-api",
+        details: { walletAddress: body.walletAddress, verified: result.verified, kycLevel: result.kycLevel },
+      });
       return reply.send(result);
     } catch (err) {
       if (err instanceof Error && err.name === "ZodError") {
-        return reply.status(400).send({ error: "Validation failed", details: err });
+        const issues = (err as any).issues?.map((i: any) => ({ path: i.path.join("."), message: i.message })) ?? [];
+        return reply.status(400).send({ error: "Validation failed", details: issues });
       }
       request.log.error(err, "KYC verification failed");
       return reply.status(500).send({ error: "KYC verification failed" });
@@ -196,6 +204,13 @@ export async function complianceRoutes(app: FastifyInstance) {
     try {
       const body = kytScoreSchema.parse(request.body);
       const result = await kytService.scoreTransaction(body);
+      await logAuditEvent({
+        institutionId: "00000000-0000-0000-0000-000000000000",
+        eventType: "kyt.scored",
+        entityType: "transfer",
+        actor: "public-api",
+        details: { walletAddress: body.walletAddress, score: result.score, passed: result.passed },
+      });
       // Flatten factors into string array for frontend consumption
       return reply.send({
         score: result.score,
@@ -209,7 +224,8 @@ export async function complianceRoutes(app: FastifyInstance) {
       });
     } catch (err) {
       if (err instanceof Error && err.name === "ZodError") {
-        return reply.status(400).send({ error: "Validation failed", details: err });
+        const issues = (err as any).issues?.map((i: any) => ({ path: i.path.join("."), message: i.message })) ?? [];
+        return reply.status(400).send({ error: "Validation failed", details: issues });
       }
       request.log.error(err, "KYT scoring failed");
       return reply.status(500).send({ error: "KYT scoring failed" });
@@ -224,7 +240,8 @@ export async function complianceRoutes(app: FastifyInstance) {
       return reply.send(result);
     } catch (err) {
       if (err instanceof Error && err.name === "ZodError") {
-        return reply.status(400).send({ error: "Validation failed", details: err });
+        const issues = (err as any).issues?.map((i: any) => ({ path: i.path.join("."), message: i.message })) ?? [];
+        return reply.status(400).send({ error: "Validation failed", details: issues });
       }
       request.log.error(err, "Travel rule packaging failed");
       return reply.status(500).send({ error: "Travel rule packaging failed" });
@@ -232,17 +249,18 @@ export async function complianceRoutes(app: FastifyInstance) {
   });
 
   // POST /api/oracle/attest — Oracle compliance attestation (on-chain)
-  app.post("/api/oracle/attest", async (request, reply) => {
+  app.post("/api/oracle/attest", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request, reply) => {
     try {
       const body = oracleAttestSchema.parse(request.body);
       const result = await attestCompliance(body);
       return reply.send(result);
     } catch (err) {
       if (err instanceof Error && err.message.includes("Transfer not found")) {
-        return reply.status(404).send({ error: (err as Error).message });
+        return reply.status(404).send({ error: "Transfer not found for the provided nonce" });
       }
       if (err instanceof Error && err.name === "ZodError") {
-        return reply.status(400).send({ error: "Validation failed", details: err });
+        const issues = (err as any).issues?.map((i: any) => ({ path: i.path.join("."), message: i.message })) ?? [];
+        return reply.status(400).send({ error: "Validation failed", details: issues });
       }
       request.log.error(err, "Oracle attestation failed");
       return reply.status(500).send({ error: "Oracle attestation failed" });

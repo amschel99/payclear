@@ -9,6 +9,7 @@ import { logAuditEvent } from "./audit.service.js";
 import { config } from "../config.js";
 import * as riskService from "./chainalysis/risk.service.js";
 import type { SubmitTransferInput } from "../schemas/transfer.schema.js";
+import { payclearIdl } from "@payclear/sdk";
 
 function generateNonce(): string {
   return randomBytes(32).toString("hex");
@@ -195,9 +196,9 @@ export async function submitTransfer(
 
     const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
 
-    // Load the program (IDL placeholder — matches SDK approach)
+    // Load the program with the real IDL from the SDK
     const program = new Program(
-      { version: "0.1.0", name: "payclear", instructions: [], accounts: [], types: [], events: [], errors: [] } as any,
+      payclearIdl as any,
       provider
     );
 

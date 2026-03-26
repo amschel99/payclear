@@ -40,7 +40,9 @@ export type AuditEventType =
   | "webhook.deleted"
   | "zk_proof.verified"
   | "zk_proof.expired"
-  | "zk_proof.revoked";
+  | "zk_proof.revoked"
+  | "kyc.verified"
+  | "kyt.scored";
 
 export async function logAuditEvent(params: {
   institutionId: string;

@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: payclear-postgres
+    environment:
+      POSTGRES_USER: payclear
+      POSTGRES_PASSWORD: payclear
+      POSTGRES_DB: payclear
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payclear"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: payclear-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: payclear-api
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://payclear:payclear@postgres:5432/payclear
+      REDIS_URL: redis://redis:6379
+      API_PORT: "3001"
+      API_HOST: "0.0.0.0"
+      SOLANA_RPC_URL: https://api.devnet.solana.com
+      PROGRAM_ID: "71F2kpdL4ezapNYLGHFCxcBBLTfHyXqsA2BZ2YxKaR8e"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:

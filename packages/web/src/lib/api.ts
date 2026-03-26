@@ -1,5 +1,7 @@
 import axios, { AxiosError } from "axios";
 import type {
+  ApiTransfer,
+  ApiAuditEvent,
   KycVerifyRequest,
   KycVerifyResponse,
   KytScoreRequest,
@@ -9,6 +11,24 @@ import type {
   OracleAttestRequest,
   OracleAttestResponse,
 } from "./types";
+
+/** Returns the institutional API key from env or sessionStorage (set by the in-app key banner). */
+export function getApiKey(): string | null {
+  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_KEY) {
+    return process.env.NEXT_PUBLIC_API_KEY;
+  }
+  if (typeof window !== "undefined") {
+    return window.sessionStorage.getItem("payclear_api_key");
+  }
+  return null;
+}
+
+/** Saves an API key to sessionStorage (survives page refresh within the same tab session). */
+export function saveApiKey(key: string): void {
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem("payclear_api_key", key);
+  }
+}
 
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
@@ -100,6 +120,42 @@ export async function checkHealth(): Promise<{
 }> {
   try {
     const response = await client.get("/health");
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function listAuditEvents(
+  limit = 50,
+  offset = 0
+): Promise<ApiAuditEvent[]> {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new ApiError("No API key configured", 401);
+  try {
+    const response = await client.get<ApiAuditEvent[]>("/v1/audit/transfers", {
+      params: { limit, offset },
+      headers: { "X-API-Key": apiKey },
+    });
+    return response.data;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+export async function listTransfers(
+  limit = 50,
+  offset = 0
+): Promise<ApiTransfer[]> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new ApiError("No API key configured", 401);
+  }
+  try {
+    const response = await client.get<ApiTransfer[]>("/v1/transfers", {
+      params: { limit, offset },
+      headers: { "X-API-Key": apiKey },
+    });
     return response.data;
   } catch (error) {
     handleError(error);

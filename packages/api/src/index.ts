@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import { config } from "./config.js";
+import { config, validateProductionConfig } from "./config.js";
 import { institutionRoutes } from "./routes/institutions.js";
 import { entityRoutes } from "./routes/entities.js";
 import { policyRoutes } from "./routes/policies.js";
@@ -15,6 +15,7 @@ import { sumsubWebhookRoutes } from "./routes/sumsub-webhook.js";
 import { chainalysisRoutes } from "./routes/chainalysis.js";
 import { complianceRoutes } from "./routes/compliance.js";
 import { reclaimRoutes } from "./routes/reclaim.js";
+import { initWebhookWorker } from "./services/webhook.service.js";
 import { keyManager } from "./utils/key-manager.js";
 
 // Serialize BigInt values as strings so JSON.stringify does not throw
@@ -28,7 +29,12 @@ async function start() {
   // Initialize key manager before handling any requests
   keyManager.initialize();
   // Plugins
-  await app.register(cors, { origin: true });
+  await app.register(cors, {
+    origin: process.env.CORS_ALLOWED_ORIGINS
+      ? process.env.CORS_ALLOWED_ORIGINS.split(",")
+      : ["http://localhost:3001"],
+    credentials: true,
+  });
   await app.register(rateLimit, {
     max: 100,
     timeWindow: "1 minute",
@@ -75,10 +81,30 @@ async function start() {
   // Health check
   app.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));
 
+  // Validate production config and log warnings
+  const warnings = validateProductionConfig();
+  for (const warning of warnings) {
+    app.log.warn(warning);
+  }
+
   // Start
   await app.listen({ port: config.port, host: config.host });
   console.log(`PayClear API running on http://${config.host}:${config.port}`);
   console.log(`Swagger docs at http://${config.host}:${config.port}/docs`);
+
+  // Start webhook delivery worker
+  const webhookWorker = initWebhookWorker();
+
+  // Graceful shutdown
+  const shutdown = async (signal: string) => {
+    app.log.info(`Received ${signal}, shutting down gracefully...`);
+    await webhookWorker.close();
+    await app.close();
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 start().catch((err) => {

@@ -86,6 +86,10 @@ export const config = {
     ),
   },
 
+  admin: {
+    apiKey: process.env.ADMIN_API_KEY || "",
+  },
+
   oracle: {
     privateKey: process.env.ORACLE_PRIVATE_KEY || "",
   },
@@ -99,3 +103,13 @@ export const config = {
     proofTtlSeconds: parseInt(process.env.RECLAIM_PROOF_TTL || "86400"), // 24 hours
   },
 } as const;
+
+export function validateProductionConfig(): string[] {
+  const warnings: string[] = [];
+  if (!process.env.WEBHOOK_SIGNING_SECRET) warnings.push("WEBHOOK_SIGNING_SECRET not set - using insecure default");
+  if (!process.env.ORACLE_PRIVATE_KEY && !process.env.ANCHOR_WALLET) warnings.push("No oracle key configured");
+  if (!process.env.SUMSUB_APP_TOKEN) warnings.push("SUMSUB_APP_TOKEN not set - KYC will use mock mode");
+  if (!process.env.ADMIN_API_KEY) warnings.push("ADMIN_API_KEY not set - institution creation disabled");
+  if (process.env.CORS_ALLOWED_ORIGINS === undefined) warnings.push("CORS_ALLOWED_ORIGINS not set - defaulting to localhost:3001");
+  return warnings;
+}

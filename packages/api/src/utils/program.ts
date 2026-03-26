@@ -1,70 +1,31 @@
 /**
  * Shared PayClear program loader.
  *
- * Loads the Anchor IDL from the program package and constructs
+ * Imports the Anchor IDL from the SDK package and constructs
  * a fully-typed Program instance that can call on-chain instructions
  * and deserialize account data.
  */
 
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
-import { join } from "path";
 import { config } from "../config.js";
-
-// Cache the parsed IDL to avoid re-reading from disk on every call
-let _idlCache: any = null;
-
-function loadIdl(): any {
-  if (_idlCache) return _idlCache;
-
-  // Look for IDL in the program package (committed to repo)
-  const idlPath = join(
-    process.cwd(),
-    "..",
-    "program",
-    "idl",
-    "payclear.json"
-  );
-
-  try {
-    _idlCache = JSON.parse(readFileSync(idlPath, "utf-8"));
-  } catch {
-    // Fallback: try from the monorepo root
-    const fallbackPath = join(
-      process.cwd(),
-      "..",
-      "..",
-      "packages",
-      "program",
-      "idl",
-      "payclear.json"
-    );
-    _idlCache = JSON.parse(readFileSync(fallbackPath, "utf-8"));
-  }
-
-  return _idlCache;
-}
+import { payclearIdl } from "@payclear/sdk";
 
 /**
  * Create an Anchor Program instance connected to the deployed PayClear program.
- *
- * @param connection - Solana RPC connection
- * @param wallet - Wallet for signing transactions
- * @returns Configured Program instance with full IDL
  */
 export function createPayClearProgram(
   connection: Connection,
   wallet: Wallet
 ): Program {
-  const idl = loadIdl();
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const programId = new PublicKey(
-    config.solana.programId || idl.address
+  return new Program(
+    payclearIdl as any,
+    provider
   );
-  return new Program(idl, programId, provider);
 }
 
 /**

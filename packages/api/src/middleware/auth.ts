@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "../db/client.js";
 import { institutions } from "../db/schema.js";
@@ -26,25 +26,28 @@ export async function authMiddleware(
     return reply.status(401).send({ error: "Missing X-API-Key header" });
   }
 
-  // Look up all active institutions and verify against hashed keys
-  // In production, use a key prefix lookup for efficiency
-  const allInstitutions = await db
+  // Use key prefix for O(1) lookup instead of scanning all institutions
+  const prefix = apiKey.substring(0, 12);
+
+  const [inst] = await db
     .select()
     .from(institutions)
-    .where(eq(institutions.active, true));
+    .where(
+      and(
+        eq(institutions.apiKeyPrefix, prefix),
+        eq(institutions.active, true)
+      )
+    );
 
-  for (const inst of allInstitutions) {
-    const valid = await bcrypt.compare(apiKey, inst.apiKeyHash);
-    if (valid) {
-      request.institution = {
-        id: inst.id,
-        institutionId: inst.institutionId,
-        name: inst.name,
-        onchainPubkey: inst.onchainPubkey,
-        authorityPubkey: inst.authorityPubkey,
-      };
-      return;
-    }
+  if (inst && (await bcrypt.compare(apiKey, inst.apiKeyHash))) {
+    request.institution = {
+      id: inst.id,
+      institutionId: inst.institutionId,
+      name: inst.name,
+      onchainPubkey: inst.onchainPubkey,
+      authorityPubkey: inst.authorityPubkey,
+    };
+    return;
   }
 
   return reply.status(401).send({ error: "Invalid API key" });

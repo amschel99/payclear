@@ -18,8 +18,8 @@ export async function auditRoutes(app: FastifyInstance) {
     };
   }>("/v1/audit/transfers", async (request) => {
     const inst = request.institution!;
-    const limit = parseInt(request.query.limit || "50", 10);
-    const offset = parseInt(request.query.offset || "0", 10);
+    const limit = Math.min(Math.max(parseInt(request.query.limit || "50", 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(request.query.offset || "0", 10) || 0, 0);
 
     const conditions = [eq(auditLog.institutionId, inst.id)];
 
@@ -47,8 +47,8 @@ export async function auditRoutes(app: FastifyInstance) {
     Querystring: { limit?: string; offset?: string };
   }>("/v1/audit/attestations", async (request) => {
     const inst = request.institution!;
-    const limit = parseInt(request.query.limit || "50", 10);
-    const offset = parseInt(request.query.offset || "0", 10);
+    const limit = Math.min(Math.max(parseInt(request.query.limit || "50", 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(request.query.offset || "0", 10) || 0, 0);
 
     return db
       .select()

@@ -1,17 +1,9 @@
 import { randomBytes } from "crypto";
 import { config } from "../config.js";
+import { SumsubClient } from "./sumsub/client.js";
 import type { KycVerifyInput } from "../schemas/compliance.schema.js";
 
 // ─── Types ──────────────────────────────────────────────────
-
-interface SumsubResult {
-  applicantId: string;
-  reviewStatus: "completed" | "pending" | "rejected";
-  reviewResult: {
-    reviewAnswer: "GREEN" | "YELLOW" | "RED";
-  };
-  riskLabels: string[];
-}
 
 export interface KycVerifyResult {
   verified: boolean;
@@ -20,29 +12,61 @@ export interface KycVerifyResult {
   applicantId: string;
 }
 
-// ─── Sumsub Integration (mocked for hackathon) ─────────────
+// ─── Sumsub Integration ─────────────────────────────────────
 
 /**
- * Verify applicant via Sumsub API.
- * Currently mocked for the hackathon demo — replace this function body
- * with real Sumsub HTTP calls when integrating.
+ * Mock Sumsub verification for dev environments where no API credentials
+ * are configured. Returns a hardcoded GREEN result.
  */
-async function verifySumsub(applicantId: string): Promise<SumsubResult> {
-  // Simulate Sumsub API latency
-  await new Promise((resolve) => setTimeout(resolve, 500));
+async function verifySumsubMock(_externalUserId: string) {
+  console.log(
+    "[KYC] Sumsub mock mode — SUMSUB_APP_TOKEN not configured. Returning GREEN."
+  );
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return {
+    applicantId: `mock_${randomBytes(12).toString("hex")}`,
+    reviewAnswer: "GREEN" as const,
+    riskLabels: [] as string[],
+  };
+}
 
-  // In production, this would call:
-  // POST https://api.sumsub.com/resources/applicants
-  // GET  https://api.sumsub.com/resources/applicants/{applicantId}/requiredIdDocsStatus
-  // using config.sumsub.appToken / config.sumsub.appSecret
+/**
+ * Verify an applicant via the real Sumsub API using the shared SumsubClient:
+ * 1. Create an applicant with identity info
+ * 2. Fetch the applicant's review status
+ */
+async function verifySumsubReal(input: KycVerifyInput) {
+  const client = new SumsubClient();
+
+  // Parse fullName into first/last (best-effort split)
+  const nameParts = input.fullName.trim().split(/\s+/);
+  const firstName = nameParts[0] || input.fullName;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+
+  const levelName = config.sumsub.defaultLevel;
+
+  // Step 1: Create applicant
+  const applicant = await client.createApplicant(
+    input.wallet,
+    levelName,
+    {
+      firstName,
+      lastName,
+      dob: input.dateOfBirth,
+      country: input.nationality,
+    }
+  );
+
+  // Step 2: Get the applicant review status
+  const status = await client.getApplicant(applicant.id);
+
+  const reviewAnswer = status.review?.reviewAnswer ?? "RED";
+  const riskLabels = status.review?.rejectLabels ?? [];
 
   return {
-    applicantId,
-    reviewStatus: "completed",
-    reviewResult: {
-      reviewAnswer: "GREEN",
-    },
-    riskLabels: [],
+    applicantId: applicant.id,
+    reviewAnswer: reviewAnswer as "GREEN" | "RED",
+    riskLabels,
   };
 }
 
@@ -66,20 +90,19 @@ function determineKycLevel(input: KycVerifyInput): number {
 
 /**
  * Orchestrates the full KYC verification flow:
- * 1. Generate applicant ID
- * 2. Call Sumsub (mocked)
- * 3. Determine KYC level based on data completeness
- * 4. Return verification result
+ * 1. Call Sumsub (real API via SumsubClient, or mock depending on config)
+ * 2. Determine KYC level based on data completeness
+ * 3. Return verification result
  *
  * Entity persistence is handled by the route layer so the caller
  * can control the institution context and audit logging.
  */
 export async function verifyKyc(input: KycVerifyInput): Promise<KycVerifyResult> {
-  const applicantId = `sumsub_${randomBytes(12).toString("hex")}`;
+  const result = config.sumsub.appToken
+    ? await verifySumsubReal(input)
+    : await verifySumsubMock(input.wallet);
 
-  const sumsubResult = await verifySumsub(applicantId);
-
-  const verified = sumsubResult.reviewResult.reviewAnswer === "GREEN";
+  const verified = result.reviewAnswer === "GREEN";
   const kycLevel = verified ? determineKycLevel(input) : 0;
 
   const expiresAt = new Date();
@@ -89,6 +112,6 @@ export async function verifyKyc(input: KycVerifyInput): Promise<KycVerifyResult>
     verified,
     kycLevel,
     expiresAt: expiresAt.toISOString(),
-    applicantId,
+    applicantId: result.applicantId,
   };
 }

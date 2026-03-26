@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { randomBytes, createHash } from "crypto";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
-import { readFileSync } from "fs";
 import { getProgram } from "../utils/program.js";
 import { db } from "../db/client.js";
 import { transfers, travelRuleData, institutions } from "../db/schema.js";
@@ -273,7 +272,7 @@ export async function submitTransfer(
 
     await logAuditEvent({
       institutionId,
-      eventType: "transfer.confirmed",
+      eventType: "transfer.completed",
       entityType: "transfer",
       entityId: transfer.id,
       actor,

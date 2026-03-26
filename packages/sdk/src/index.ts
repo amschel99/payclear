@@ -10,6 +10,9 @@ export type {
   RecordZkProofParams,
 } from "./client.js";
 
+// Program IDL
+export { default as payclearIdl } from "./idl/payclear.json";
+
 // PDA derivation helpers
 export {
   deriveRegistryPDA,

@@ -18,6 +18,7 @@ export async function createInstitution(
 
   // Generate API key
   const apiKey = `pclr_${randomBytes(32).toString("hex")}`;
+  const apiKeyPrefix = apiKey.substring(0, 12);
   const apiKeyHash = await bcrypt.hash(apiKey, 12);
 
   // Placeholder for on-chain pubkey — will be set after on-chain registration
@@ -33,6 +34,7 @@ export async function createInstitution(
       onchainPubkey,
       authorityPubkey: input.authorityPubkey,
       apiKeyHash,
+      apiKeyPrefix,
     })
     .returning();
 

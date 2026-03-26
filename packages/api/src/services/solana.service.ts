@@ -6,7 +6,6 @@ import {
   TransactionInstruction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { Wallet } from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
 import { getProgram } from "../utils/program.js";
 import { config } from "../config.js";

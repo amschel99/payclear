@@ -1,28 +1,32 @@
 "use client";
 
-import React, { useMemo } from "react";
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { SOLANA_RPC_ENDPOINT } from "@/lib/constants";
+import React from "react";
+import { createAppKit } from "@reown/appkit/react";
+import { SolanaAdapter } from "@reown/appkit-adapter-solana/react";
+import { solanaDevnet } from "@reown/appkit/networks";
 
-import "@solana/wallet-adapter-react-ui/styles.css";
+const solanaAdapter = new SolanaAdapter();
+
+createAppKit({
+  adapters: [solanaAdapter],
+  networks: [solanaDevnet],
+  projectId: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || "",
+  metadata: {
+    name: "PayClear Protocol",
+    description:
+      "Institutional-grade compliance layer for Solana stablecoin transfers.",
+    url: "https://payclear.io",
+    icons: [],
+  },
+  features: {
+    analytics: false,
+  },
+});
 
 export default function AppProviders({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
-
-  return (
-    <ConnectionProvider endpoint={SOLANA_RPC_ENDPOINT}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
+  return <>{children}</>;
 }

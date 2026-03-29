@@ -14,8 +14,6 @@ import { listAuditEvents, getApiKey, saveApiKey } from "@/lib/api";
 import { explorerUrl } from "@/lib/constants";
 import type { ApiAuditEvent } from "@/lib/types";
 
-// ─── Helpers ──────────────────────────────────────────────────
-
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("en-US", {
     month: "short",
@@ -31,24 +29,21 @@ function shortId(id: string | null): string {
   return `${id.slice(0, 8)}…`;
 }
 
-// Colour-code event types by category
 function eventBadgeClass(eventType: string): string {
   if (eventType.startsWith("transfer."))
-    return "bg-blue-100 text-blue-800 border border-blue-200";
+    return "bg-blue-500/10 text-blue-400 ring-1 ring-inset ring-blue-500/20";
   if (eventType.startsWith("entity."))
-    return "bg-purple-100 text-purple-800 border border-purple-200";
+    return "bg-purple-500/10 text-purple-400 ring-1 ring-inset ring-purple-500/20";
   if (eventType.startsWith("screening."))
-    return "bg-amber-100 text-amber-800 border border-amber-200";
+    return "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20";
   if (eventType.startsWith("travel_rule."))
-    return "bg-teal-100 text-teal-800 border border-teal-200";
+    return "bg-teal-500/10 text-teal-400 ring-1 ring-inset ring-teal-500/20";
   if (eventType.startsWith("policy."))
-    return "bg-gray-100 text-gray-700 border border-gray-200";
+    return "bg-zinc-800 text-zinc-400 ring-1 ring-inset ring-zinc-700";
   if (eventType.startsWith("zk_proof."))
-    return "bg-indigo-100 text-indigo-800 border border-indigo-200";
-  return "bg-gray-100 text-gray-700 border border-gray-200";
+    return "bg-indigo-500/10 text-indigo-400 ring-1 ring-inset ring-indigo-500/20";
+  return "bg-zinc-800 text-zinc-400 ring-1 ring-inset ring-zinc-700";
 }
-
-// ─── Page ─────────────────────────────────────────────────────
 
 export default function AuditPage() {
   const [events, setEvents] = useState<ApiAuditEvent[]>([]);
@@ -88,14 +83,14 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-[calc(100vh-64px)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 animate-slide-up">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Audit Trail</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-white">Audit Trail</h1>
+            <p className="text-sm text-zinc-500 mt-1">
               Immutable log of all compliance events for your institution
             </p>
           </div>
@@ -103,9 +98,9 @@ export default function AuditPage() {
             <button
               onClick={fetchEvents}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300 disabled:opacity-50 transition-all duration-200"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
           )}
@@ -113,14 +108,16 @@ export default function AuditPage() {
 
         {/* API key banner */}
         {!hasKey && (
-          <div className="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 flex flex-col sm:flex-row sm:items-center gap-3">
-            <KeyRound className="w-5 h-5 text-amber-600 shrink-0" />
+          <div className="mb-8 p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col sm:flex-row sm:items-center gap-4 animate-slide-up stagger-1">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <KeyRound className="w-5 h-5 text-amber-400" />
+            </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">API key required</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-300">API key required</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
                 Enter your institutional API key to view the audit log, or set{" "}
-                <code className="font-mono bg-amber-100 px-1 rounded">NEXT_PUBLIC_API_KEY</code>{" "}
-                in <code className="font-mono bg-amber-100 px-1 rounded">.env.local</code>.
+                <code className="font-mono bg-amber-500/10 px-1 rounded">NEXT_PUBLIC_API_KEY</code>{" "}
+                in <code className="font-mono bg-amber-500/10 px-1 rounded">.env.local</code>
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -141,9 +138,9 @@ export default function AuditPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-8 p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
 
@@ -151,17 +148,19 @@ export default function AuditPage() {
         {loading && events.length === 0 && (
           <div className="card space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 rounded-lg bg-gray-100 animate-pulse" />
+              <div key={i} className="h-10 rounded-lg skeleton" />
             ))}
           </div>
         )}
 
         {/* Empty state */}
         {!loading && hasKey && events.length === 0 && !error && (
-          <div className="card text-center py-16">
-            <ScrollText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No audit events yet</p>
-            <p className="text-sm text-gray-400 mt-1">
+          <div className="card text-center py-20">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
+              <ScrollText className="w-6 h-6 text-zinc-600" />
+            </div>
+            <p className="text-zinc-400 font-medium">No audit events yet</p>
+            <p className="text-sm text-zinc-600 mt-1">
               Events are recorded as your institution performs compliance operations.
             </p>
           </div>
@@ -169,89 +168,89 @@ export default function AuditPage() {
 
         {/* Audit table */}
         {events.length > 0 && (
-          <div className="card overflow-hidden p-0">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-900">
+          <div className="card overflow-hidden p-0 animate-slide-up stagger-2">
+            <div className="px-6 py-4 border-b border-white/[0.04] flex items-center justify-between">
+              <p className="text-sm font-semibold text-zinc-200">
                 {events.length} event{events.length !== 1 ? "s" : ""}
               </p>
-              <p className="text-xs text-gray-400">Most recent first</p>
+              <p className="text-xs text-zinc-600">Most recent first</p>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/60">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-44">
+                  <tr className="border-b border-white/[0.04]">
+                    <th className="text-left px-6 py-3.5 text-xs font-medium text-zinc-500 uppercase tracking-wider w-44">
                       Time
                     </th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="text-left px-6 py-3.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Event
                     </th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                    <th className="text-left px-6 py-3.5 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">
                       Entity
                     </th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    <th className="text-left px-6 py-3.5 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden lg:table-cell">
                       Actor
                     </th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    <th className="text-left px-6 py-3.5 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden lg:table-cell">
                       TX
                     </th>
                     <th className="w-10" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-white/[0.03]">
                   {events.map((ev) => {
                     const isExpanded = expandedRow === ev.id;
                     return (
                       <React.Fragment key={ev.id}>
                         <tr
-                          className="hover:bg-gray-50/60 cursor-pointer transition-colors"
+                          className="hover:bg-white/[0.02] cursor-pointer transition-colors"
                           onClick={() =>
                             setExpandedRow(isExpanded ? null : ev.id)
                           }
                         >
-                          <td className="px-5 py-3.5 text-xs text-gray-500 font-mono whitespace-nowrap">
+                          <td className="px-6 py-3.5 text-xs text-zinc-500 font-mono whitespace-nowrap">
                             {formatTime(ev.createdAt)}
                           </td>
-                          <td className="px-5 py-3.5">
+                          <td className="px-6 py-3.5">
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${eventBadgeClass(ev.eventType)}`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${eventBadgeClass(ev.eventType)}`}
                             >
                               {ev.eventType}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 hidden md:table-cell">
+                          <td className="px-6 py-3.5 hidden md:table-cell">
                             <div className="text-xs">
-                              <span className="font-medium text-gray-700">
+                              <span className="font-medium text-zinc-300">
                                 {ev.entityType}
                               </span>
                               {ev.entityId && (
-                                <span className="text-gray-400 ml-1.5 font-mono">
+                                <span className="text-zinc-600 ml-1.5 font-mono">
                                   {shortId(ev.entityId)}
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 text-xs text-gray-600 font-mono hidden lg:table-cell truncate max-w-[140px]">
+                          <td className="px-6 py-3.5 text-xs text-zinc-500 font-mono hidden lg:table-cell truncate max-w-[140px]">
                             {ev.actor}
                           </td>
-                          <td className="px-5 py-3.5 hidden lg:table-cell">
+                          <td className="px-6 py-3.5 hidden lg:table-cell">
                             {ev.txSignature ? (
                               <a
                                 href={explorerUrl(ev.txSignature)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline font-mono"
+                                className="inline-flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 font-mono transition-colors"
                               >
                                 {ev.txSignature.slice(0, 8)}…
                                 <ExternalLink className="w-3 h-3" />
                               </a>
                             ) : (
-                              <span className="text-gray-300 text-xs">—</span>
+                              <span className="text-zinc-700 text-xs">—</span>
                             )}
                           </td>
-                          <td className="pr-4 text-gray-400">
+                          <td className="pr-5 text-zinc-600">
                             {isExpanded ? (
                               <ChevronUp className="w-4 h-4" />
                             ) : (
@@ -260,41 +259,40 @@ export default function AuditPage() {
                           </td>
                         </tr>
 
-                        {/* Expanded details row */}
                         {isExpanded && (
-                          <tr className="bg-gray-50/80">
-                            <td colSpan={6} className="px-5 py-4">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                          <tr className="bg-white/[0.02]">
+                            <td colSpan={6} className="px-6 py-5">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
                                 <div>
-                                  <p className="text-gray-400 font-semibold uppercase tracking-wide mb-1">
+                                  <p className="text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">
                                     Event ID
                                   </p>
-                                  <p className="font-mono text-gray-700">{ev.id}</p>
+                                  <p className="font-mono text-zinc-300">{ev.id}</p>
                                 </div>
                                 {ev.entityId && (
                                   <div>
-                                    <p className="text-gray-400 font-semibold uppercase tracking-wide mb-1">
+                                    <p className="text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">
                                       Entity ID
                                     </p>
-                                    <p className="font-mono text-gray-700">{ev.entityId}</p>
+                                    <p className="font-mono text-zinc-300">{ev.entityId}</p>
                                   </div>
                                 )}
                                 <div>
-                                  <p className="text-gray-400 font-semibold uppercase tracking-wide mb-1">
+                                  <p className="text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">
                                     Actor
                                   </p>
-                                  <p className="font-mono text-gray-700">{ev.actor}</p>
+                                  <p className="font-mono text-zinc-300">{ev.actor}</p>
                                 </div>
                                 {ev.txSignature && (
                                   <div>
-                                    <p className="text-gray-400 font-semibold uppercase tracking-wide mb-1">
+                                    <p className="text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">
                                       TX Signature
                                     </p>
                                     <a
                                       href={explorerUrl(ev.txSignature)}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="font-mono text-primary-600 hover:underline break-all"
+                                      className="font-mono text-primary-400 hover:text-primary-300 break-all transition-colors"
                                     >
                                       {ev.txSignature}
                                     </a>
@@ -302,10 +300,10 @@ export default function AuditPage() {
                                 )}
                                 {ev.details && Object.keys(ev.details).length > 0 && (
                                   <div className="sm:col-span-2">
-                                    <p className="text-gray-400 font-semibold uppercase tracking-wide mb-1">
+                                    <p className="text-zinc-500 font-semibold uppercase tracking-wider mb-1.5">
                                       Details
                                     </p>
-                                    <pre className="bg-white border border-gray-200 rounded-lg p-3 text-gray-700 overflow-x-auto text-xs leading-relaxed">
+                                    <pre className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-4 text-zinc-300 overflow-x-auto text-xs leading-relaxed font-mono">
                                       {JSON.stringify(ev.details, null, 2)}
                                     </pre>
                                   </div>

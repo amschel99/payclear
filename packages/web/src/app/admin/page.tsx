@@ -9,7 +9,6 @@ import {
   ExternalLink,
   AlertTriangle,
   Clock,
-  Stamp,
   KeyRound,
   RefreshCw,
   AlertCircle,
@@ -45,7 +44,6 @@ function mapApiToPending(t: ApiTransfer): PendingTransfer {
     date: t.createdAt,
     senderWallet: t.senderWallet,
     receiverWallet: t.receiverWallet,
-    // USDC has 6 decimal places
     amount: Number(t.amount) / 1_000_000,
     currency: "USDC",
     kytScore: t.senderRiskScore ?? 0,
@@ -68,7 +66,6 @@ export default function AdminPage() {
     setError(null);
     try {
       const all = await listTransfers(50, 0);
-      // Show only pending (status=0) transfers in the admin queue
       const pending = all
         .filter((t) => t.status === 0)
         .map(mapApiToPending);
@@ -129,16 +126,13 @@ export default function AdminPage() {
   const attestedCount = transfers.filter((t: PendingTransfer) => t.attestationStatus === "attested").length;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-[calc(100vh-64px)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 animate-slide-up">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
-              <Stamp className="w-6 h-6 text-primary-600" />
-              Oracle Admin
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-white">Oracle Admin</h1>
+            <p className="text-sm text-zinc-500 mt-1">
               Review and attest compliant transfers on-chain
             </p>
           </div>
@@ -147,33 +141,35 @@ export default function AdminPage() {
               <button
                 onClick={fetchTransfers}
                 disabled={loading}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300 disabled:opacity-50 transition-all duration-200"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                <RefreshCw className="w-4 h-4" />
                 Refresh
               </button>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-700">{pendingCount} Pending</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-medium text-amber-400">{pendingCount} Pending</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-700">{attestedCount} Attested</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">{attestedCount} Attested</span>
             </div>
           </div>
         </div>
 
         {/* API key banner */}
         {!hasKey && (
-          <div className="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 flex flex-col sm:flex-row sm:items-center gap-3">
-            <KeyRound className="w-5 h-5 text-amber-600 shrink-0" />
+          <div className="mb-8 p-5 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col sm:flex-row sm:items-center gap-4 animate-slide-up stagger-1">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <KeyRound className="w-5 h-5 text-amber-400" />
+            </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">API key required</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-300">API key required</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">
                 Enter your institutional API key to load pending transfers, or set{" "}
-                <code className="font-mono bg-amber-100 px-1 rounded">NEXT_PUBLIC_API_KEY</code>{" "}
-                in <code className="font-mono bg-amber-100 px-1 rounded">.env.local</code>.
+                <code className="font-mono bg-amber-500/10 px-1 rounded">NEXT_PUBLIC_API_KEY</code>{" "}
+                in <code className="font-mono bg-amber-500/10 px-1 rounded">.env.local</code>
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -194,75 +190,78 @@ export default function AdminPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-8 p-4 rounded-xl border border-red-500/20 bg-red-500/5 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+          <div className="flex items-center justify-center py-20 gap-3 text-zinc-500">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span className="text-sm">Loading pending transfers…</span>
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty */}
         {!loading && hasKey && transfers.length === 0 && !error && (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <CheckCircle2 className="w-8 h-8 mb-3" />
-            <p className="text-sm font-medium">No pending transfers</p>
-            <p className="text-xs mt-1">All transfers have been attested or none have been submitted yet.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-6 h-6 text-zinc-600" />
+            </div>
+            <p className="text-sm font-medium text-zinc-400">No pending transfers</p>
+            <p className="text-xs mt-1 text-zinc-600">All transfers have been attested or none have been submitted yet.</p>
           </div>
         )}
 
-        {/* No key state */}
+        {/* No key */}
         {!loading && !hasKey && (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <KeyRound className="w-8 h-8 mb-3" />
-            <p className="text-sm font-medium">Connect an API key to see pending transfers</p>
+          <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+              <KeyRound className="w-6 h-6 text-zinc-600" />
+            </div>
+            <p className="text-sm font-medium text-zinc-400">Connect an API key to see pending transfers</p>
           </div>
         )}
 
         {/* Transfer cards */}
         {!loading && transfers.length > 0 && (
           <div className="space-y-4">
-            {transfers.map((tx: PendingTransfer) => (
+            {transfers.map((tx: PendingTransfer, i: number) => (
               <div
                 key={tx.id}
-                className={`card transition-all duration-300 ${
+                className={`card transition-all duration-300 animate-slide-up ${
                   tx.attestationStatus === "attested"
-                    ? "border-emerald-200 bg-emerald-50/20"
+                    ? "border-emerald-500/20"
                     : tx.attestationStatus === "failed"
-                    ? "border-red-200 bg-red-50/20"
+                    ? "border-red-500/20"
                     : !tx.kytPassed
-                    ? "border-amber-200 bg-amber-50/10"
+                    ? "border-amber-500/20"
                     : ""
                 }`}
+                style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Parties */}
+                <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">Transfer</p>
-                      <p className="text-xs font-mono text-gray-700">
+                      <p className="text-xs text-zinc-500 font-medium mb-1.5">Transfer</p>
+                      <p className="text-xs font-mono text-zinc-300">
                         {shortAddr(tx.senderWallet)}
                       </p>
-                      <p className="text-xs text-gray-400">↓</p>
-                      <p className="text-xs font-mono text-gray-700">
+                      <p className="text-xs text-zinc-600 my-0.5">↓</p>
+                      <p className="text-xs font-mono text-zinc-300">
                         {shortAddr(tx.receiverWallet)}
                       </p>
                     </div>
 
-                    {/* Amount */}
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">Amount</p>
-                      <p className="text-sm font-bold text-gray-900">
+                      <p className="text-xs text-zinc-500 font-medium mb-1.5">Amount</p>
+                      <p className="text-sm font-bold text-white">
                         ${tx.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-                        <span className="text-xs font-medium text-gray-400">{tx.currency}</span>
+                        <span className="text-xs font-medium text-zinc-600">{tx.currency}</span>
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-zinc-600 mt-0.5">
                         {new Date(tx.date).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -272,23 +271,22 @@ export default function AdminPage() {
                       </p>
                     </div>
 
-                    {/* KYT */}
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">KYT Score</p>
+                      <p className="text-xs text-zinc-500 font-medium mb-1.5">KYT Score</p>
                       <div className="flex items-center gap-2">
                         <span
                           className={`badge ${
                             !tx.kytPassed
-                              ? "bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20"
+                              ? "bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20"
                               : tx.kytScore <= 20
-                              ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
-                              : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20"
+                              ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20"
                           }`}
                         >
                           {tx.kytScore}/100
                         </span>
                         {!tx.kytPassed && (
-                          <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                          <span className="flex items-center gap-1 text-xs text-red-400 font-medium">
                             <AlertTriangle className="w-3 h-3" />
                             High Risk
                           </span>
@@ -296,11 +294,10 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Travel Rule */}
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-1">Travel Rule</p>
+                      <p className="text-xs text-zinc-500 font-medium mb-1.5">Travel Rule</p>
                       {tx.travelRuleHash ? (
-                        <p className="text-xs font-mono text-gray-600 break-all">
+                        <p className="text-xs font-mono text-zinc-400 break-all">
                           {tx.travelRuleHash.slice(0, 24)}…
                         </p>
                       ) : (
@@ -309,13 +306,12 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Action */}
-                  <div className="flex-shrink-0 flex items-center gap-3 lg:pl-4 lg:border-l lg:border-gray-100">
+                  <div className="flex-shrink-0 flex items-center gap-3 lg:pl-5 lg:border-l lg:border-white/[0.06]">
                     {tx.attestationStatus === "pending" && (
                       <button
                         onClick={() => handleAttest(tx.id)}
                         disabled={!tx.kytPassed}
-                        className={`btn-primary min-w-[120px] ${!tx.kytPassed ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`btn-primary min-w-[120px] ${!tx.kytPassed ? "opacity-40 cursor-not-allowed" : ""}`}
                         title={!tx.kytPassed ? "Cannot attest: KYT check failed" : "Attest this transfer on-chain"}
                       >
                         <ShieldCheck className="w-4 h-4" />
@@ -323,14 +319,14 @@ export default function AdminPage() {
                       </button>
                     )}
                     {tx.attestationStatus === "attesting" && (
-                      <div className="flex items-center gap-2 min-w-[120px] justify-center px-4 py-2.5 rounded-lg bg-primary-50 text-primary-700 text-sm font-medium">
+                      <div className="flex items-center gap-2 min-w-[120px] justify-center px-4 py-2.5 rounded-lg bg-primary-500/10 text-primary-400 text-sm font-medium border border-primary-500/20">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Attesting...
                       </div>
                     )}
                     {tx.attestationStatus === "attested" && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+                        <div className="flex items-center gap-2 text-sm font-medium text-emerald-400">
                           <CheckCircle2 className="w-4 h-4" />
                           Attested
                         </div>
@@ -339,7 +335,7 @@ export default function AdminPage() {
                             href={explorerUrl(tx.txSignature)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
+                            className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 font-medium transition-colors"
                           >
                             Explorer
                             <ExternalLink className="w-3 h-3" />
@@ -349,16 +345,16 @@ export default function AdminPage() {
                     )}
                     {tx.attestationStatus === "failed" && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-red-600">
+                        <div className="flex items-center gap-2 text-sm font-medium text-red-400">
                           <XCircle className="w-4 h-4" />
                           Failed
                         </div>
                         {tx.error && (
-                          <p className="text-xs text-red-500 max-w-[200px]">{tx.error}</p>
+                          <p className="text-xs text-red-400/70 max-w-[200px]">{tx.error}</p>
                         )}
                         <button
                           onClick={() => handleAttest(tx.id)}
-                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          className="text-xs text-primary-400 hover:text-primary-300 font-medium transition-colors"
                         >
                           Retry
                         </button>
